@@ -1,0 +1,2989 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Threat Model Graph-of-Graphs - Scenario Based</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        /* Main Layout */
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Left Panel - Scenario Navigator */
+        .scenario-nav {
+            width: 320px;
+            background: #111;
+            border-right: 1px solid #333;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .scenario-nav h3 {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .scenario-item {
+            padding: 16px;
+            margin-bottom: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+            background: #1a1a1a;
+        }
+
+        .scenario-item:hover {
+            background: rgba(99, 102, 241, 0.1);
+            border-left-color: #6366f1;
+        }
+
+        .scenario-item.active {
+            background: rgba(99, 102, 241, 0.2);
+            border-left-color: #6366f1;
+        }
+
+        .scenario-title {
+            font-weight: 600;
+            font-size: 15px;
+            margin-bottom: 6px;
+            color: #fff;
+        }
+
+        .scenario-description {
+            font-size: 12px;
+            color: #999;
+            line-height: 1.4;
+            margin-bottom: 8px;
+        }
+
+        .scenario-stats {
+            display: flex;
+            gap: 15px;
+            font-size: 11px;
+            color: #666;
+        }
+
+        .scenario-stats span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .scenario-stats .stat-value {
+            color: #6366f1;
+            font-weight: 600;
+        }
+
+        /* Center - Main Visualization */
+        .main-view {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Top Bar */
+        .top-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: rgba(17, 17, 17, 0.9);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid #333;
+            display: flex;
+            align-items: center;
+            padding: 0 30px;
+            z-index: 100;
+        }
+
+        .view-toggles {
+            display: flex;
+            gap: 10px;
+            margin-left: auto;
+        }
+
+        .view-btn {
+            padding: 8px 16px;
+            background: #222;
+            border: 1px solid #333;
+            border-radius: 6px;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .view-btn:hover {
+            background: #333;
+            border-color: #444;
+        }
+
+        .view-btn.active {
+            background: #6366f1;
+            border-color: #6366f1;
+        }
+
+        /* Graph Container */
+        #graph-container {
+            position: absolute;
+            top: 60px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at center, #111 0%, #000 100%);
+        }
+
+        /* Node Styles */
+        .node {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .node-circle {
+            stroke-width: 2;
+            transition: all 0.3s ease;
+        }
+
+        .node:hover .node-circle {
+            stroke-width: 4;
+            filter: drop-shadow(0 0 20px currentColor);
+        }
+
+        .node-label {
+            font-size: 16px;
+            text-anchor: middle;
+            pointer-events: none;
+            fill: #fff;
+            font-weight: 600;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+        }
+
+        .layer-label {
+            font-size: 10px;
+            text-anchor: middle;
+            fill: #fff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 500;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+        }
+
+        .risk-indicator {
+            font-size: 10px;
+            font-weight: bold;
+            text-anchor: middle;
+            fill: #fff;
+        }
+
+        /* Links */
+        .link {
+            stroke: #9ca3af;
+            stroke-opacity: 1.0;
+            stroke-width: 3;
+            transition: all 0.3s ease;
+        }
+
+        .link.highlighted {
+            stroke: #6366f1;
+            stroke-width: 4;
+            stroke-opacity: 1;
+        }
+
+        .link.critical-path {
+            stroke: #ef4444;
+            stroke-width: 5;
+            stroke-opacity: 1;
+        }
+
+        /* Layer Legend */
+        .layer-legend {
+            position: absolute;
+            top: 80px;
+            right: 20px;
+            background: rgba(17, 17, 17, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 15px;
+            max-width: 200px;
+        }
+
+        .layer-legend h4 {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+            font-size: 11px;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 2px solid;
+        }
+
+        /* Right Panel - Details */
+        .details-panel {
+            position: absolute;
+            right: -400px;
+            top: 60px;
+            bottom: 0;
+            width: 400px;
+            background: rgba(17, 17, 17, 0.95);
+            backdrop-filter: blur(20px);
+            border-left: 1px solid #333;
+            transition: right 0.3s ease;
+            overflow-y: auto;
+            padding: 30px;
+        }
+
+        .details-panel.active {
+            right: 0;
+        }
+
+        .close-details {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: #666;
+            font-size: 24px;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .close-details:hover {
+            color: #fff;
+        }
+
+        /* Threat Cards */
+        .threat-card {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .threat-card:hover {
+            border-color: #444;
+            background: #222;
+        }
+
+        .threat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .threat-name {
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .threat-category {
+            font-size: 12px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            background: #333;
+            color: #999;
+        }
+
+        .threat-category.compromise { background: rgba(220, 38, 38, 0.2); color: #ef4444; }
+        .threat-category.data-breach { background: rgba(234, 88, 12, 0.2); color: #f97316; }
+        .threat-category.availability { background: rgba(250, 204, 21, 0.2); color: #facc15; }
+        .threat-category.integrity { background: rgba(139, 92, 246, 0.2); color: #8b5cf6; }
+        .threat-category.compliance { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+
+        .threat-description {
+            color: #999;
+            font-size: 14px;
+            line-height: 1.5;
+            margin-bottom: 16px;
+        }
+
+        /* Node Info Header */
+        .node-info {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+
+        .node-meta {
+            display: flex;
+            gap: 12px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+
+        .meta-item {
+            font-size: 12px;
+            padding: 4px 12px;
+            background: #222;
+            border: 1px solid #333;
+            border-radius: 16px;
+            color: #999;
+        }
+
+        /* Floating Stats */
+        .floating-stats {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            background: rgba(17, 17, 17, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 20px;
+            min-width: 300px;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #6366f1;
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Scenario Info Box */
+        .scenario-info {
+            position: absolute;
+            top: 80px;
+            left: 20px;
+            background: rgba(17, 17, 17, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 20px;
+            max-width: 350px;
+        }
+
+        .scenario-info h3 {
+            font-size: 18px;
+            margin-bottom: 8px;
+            color: #fff;
+        }
+
+        .scenario-info p {
+            font-size: 13px;
+            color: #999;
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+
+        .threat-focus {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 12px;
+        }
+
+        .threat-focus h4 {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #ef4444;
+            margin-bottom: 8px;
+        }
+
+        .threat-focus ul {
+            list-style: none;
+            font-size: 13px;
+            color: #ccc;
+        }
+
+        .threat-focus li {
+            padding-left: 16px;
+            position: relative;
+            margin-bottom: 4px;
+        }
+
+        .threat-focus li:before {
+            content: "▸";
+            position: absolute;
+            left: 0;
+            color: #ef4444;
+        }
+
+        /* Animated Background Grid */
+        .bg-grid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: grid-move 20s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes grid-move {
+            to { transform: translate(50px, 50px); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Scenario Navigator -->
+        <div class="scenario-nav">
+            <h3>Threat Model Scenarios</h3>
+            
+            <div class="scenario-item active" data-scenario="1">
+                <div class="scenario-title">Simple Payment Flow</div>
+                <div class="scenario-description">Basic payment transaction from customer to payment component</div>
+                <div class="scenario-stats">
+                    <span><span class="stat-value">4</span> layers</span>
+                    <span><span class="stat-value">4</span> nodes</span>
+                    <span><span class="stat-value">5</span> threats</span>
+                </div>
+            </div>
+            
+            <div class="scenario-item" data-scenario="2">
+                <div class="scenario-title">Authentication Chain</div>
+                <div class="scenario-description">Complete authentication flow from login to token validation</div>
+                <div class="scenario-stats">
+                    <span><span class="stat-value">6</span> layers</span>
+                    <span><span class="stat-value">6</span> nodes</span>
+                    <span><span class="stat-value">8</span> threats</span>
+                </div>
+            </div>
+            
+            <div class="scenario-item" data-scenario="3">
+                <div class="scenario-title">Data Breach Path</div>
+                <div class="scenario-description">SQL injection vulnerability traced from code to customer impact</div>
+                <div class="scenario-stats">
+                    <span><span class="stat-value">7</span> layers</span>
+                    <span><span class="stat-value">7</span> nodes</span>
+                    <span><span class="stat-value">12</span> threats</span>
+                </div>
+            </div>
+            
+            <div class="scenario-item" data-scenario="4">
+                <div class="scenario-title">Third-Party Vulnerability</div>
+                <div class="scenario-description">Supply chain attack through Stripe package CVE to infrastructure</div>
+                <div class="scenario-stats">
+                    <span><span class="stat-value">10</span> layers</span>
+                    <span><span class="stat-value">10</span> nodes</span>
+                    <span><span class="stat-value">15</span> threats</span>
+                </div>
+            </div>
+            
+            <div class="scenario-item" data-scenario="5">
+                <div class="scenario-title">Microservices Mesh</div>
+                <div class="scenario-description">Complex service interdependencies with lateral movement risks</div>
+                <div class="scenario-stats">
+                    <span><span class="stat-value">7</span> layers</span>
+                    <span><span class="stat-value">20</span> nodes</span>
+                    <span><span class="stat-value">28</span> threats</span>
+                </div>
+            </div>
+            
+            <div class="scenario-item" data-scenario="6">
+                <div class="scenario-title">Full E-Commerce System</div>
+                <div class="scenario-description">Complete threat model across all business functions and infrastructure</div>
+                <div class="scenario-stats">
+                    <span><span class="stat-value">11</span> layers</span>
+                    <span><span class="stat-value">50+</span> nodes</span>
+                    <span><span class="stat-value">75+</span> threats</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Visualization Area -->
+        <div class="main-view">
+            <div class="bg-grid"></div>
+            
+            <!-- Top Bar -->
+            <div class="top-bar">
+                <h1 style="font-size: 20px; font-weight: 600;">Threat Model Graph-of-Graphs</h1>
+                <div class="view-toggles">
+                    <button class="view-btn active" data-view="graph">Graph View</button>
+                    <button class="view-btn" data-view="matrix">Risk Matrix</button>
+                    <button class="view-btn" data-view="flow">Attack Flow</button>
+                </div>
+            </div>
+
+            <!-- Graph Container -->
+            <div id="graph-container">
+            </div>
+
+            <!-- Scenario Info Box -->
+            <div class="scenario-info" id="scenarioInfo">
+                <h3>Simple Payment Flow</h3>
+                <p>This scenario traces a basic payment transaction from customer interaction through the payment processing system.</p>
+                <div class="threat-focus">
+                    <h4>Key Threats</h4>
+                    <ul>
+                        <li>Payment data exposure</li>
+                        <li>API authentication bypass</li>
+                        <li>Transaction tampering</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Layer Legend -->
+            <div class="layer-legend">
+                <h4>Layers</h4>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #6366f1; border-color: #6366f1;"></div>
+                    <span>Customer</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #1e3a8a; border-color: #1e3a8a;"></div>
+                    <span>Business</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #6b21a8; border-color: #6b21a8;"></div>
+                    <span>Application</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #be185d; border-color: #be185d;"></div>
+                    <span>Component</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #ea580c; border-color: #ea580c;"></div>
+                    <span>Package</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #dc2626; border-color: #dc2626;"></div>
+                    <span>Class</span>
+                </div>
+            </div>
+
+            <!-- Floating Stats -->
+            <div class="floating-stats">
+                <div class="stat-grid">
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalThreats">5</div>
+                        <div class="stat-label">Total Threats</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="avgRisk">72%</div>
+                        <div class="stat-label">Avg Risk</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="criticalNodes">2</div>
+                        <div class="stat-label">Critical</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Details Panel -->
+            <div class="details-panel" id="detailsPanel">
+                <button class="close-details" onclick="closeDetails()">×</button>
+                
+                <div class="node-info" id="nodeInfo"></div>
+                
+                <h3 style="margin-bottom: 16px; font-size: 16px;">Threats</h3>
+                <div id="threatsList"></div>
+                
+                <h3 style="margin-top: 30px; margin-bottom: 16px; font-size: 16px;">Security Controls</h3>
+                <div id="controlsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Scenario definitions with multi-layer threat models
+        const scenarios = {
+            1: {
+                name: "Simple Payment Flow",
+                description: "Basic payment transaction from customer to payment component",
+                keyThreats: ["Payment data exposure", "API authentication bypass", "Transaction tampering"],
+                nodes: [
+                    {
+                        id: "customer-1",
+                        name: "Customer",
+                        layer: "customer",
+                        x: 300,
+                        y: 100,
+                        threats: [
+                            {
+                                id: "THREAT-C-001",
+                                name: "Phishing Attack",
+                                category: "compromise",
+                                description: "Customer credentials stolen via phishing email",
+                                likelihood: 4,
+                                impact: 4
+                            }
+                        ],
+                        controls: [
+                            {
+                                id: "CTRL-C-001",
+                                name: "2FA Authentication",
+                                effectiveness: 85,
+                                type: "preventive"
+                            }
+                        ],
+                        riskScore: { inherent: 80, residual: 45 }
+                    },
+                    {
+                        id: "business-payment",
+                        name: "Payment Processing",
+                        layer: "business",
+                        x: 300,
+                        y: 250,
+                        threats: [
+                            {
+                                id: "THREAT-B-001",
+                                name: "Revenue Loss",
+                                category: "availability",
+                                description: "Payment system downtime causing transaction failures",
+                                likelihood: 3,
+                                impact: 5
+                            }
+                        ],
+                        controls: [
+                            {
+                                id: "CTRL-B-001",
+                                name: "Redundant Payment Gateways",
+                                effectiveness: 90,
+                                type: "corrective"
+                            }
+                        ],
+                        riskScore: { inherent: 75, residual: 40 }
+                    },
+                    {
+                        id: "app-payment-api",
+                        name: "Payment API",
+                        layer: "application",
+                        x: 300,
+                        y: 400,
+                        threats: [
+                            {
+                                id: "THREAT-A-001",
+                                name: "API Key Exposure",
+                                category: "data-breach",
+                                description: "Hardcoded API keys in client code",
+                                likelihood: 3,
+                                impact: 4
+                            },
+                            {
+                                id: "THREAT-A-002",
+                                name: "Rate Limit Bypass",
+                                category: "integrity",
+                                description: "Excessive API calls causing DoS",
+                                likelihood: 4,
+                                impact: 3
+                            }
+                        ],
+                        controls: [
+                            {
+                                id: "CTRL-A-001",
+                                name: "API Gateway",
+                                effectiveness: 80,
+                                type: "preventive"
+                            },
+                            {
+                                id: "CTRL-A-002",
+                                name: "Rate Limiting",
+                                effectiveness: 75,
+                                type: "detective"
+                            }
+                        ],
+                        riskScore: { inherent: 70, residual: 35 }
+                    },
+                    {
+                        id: "comp-payment-handler",
+                        name: "Payment Handler",
+                        layer: "component",
+                        x: 300,
+                        y: 550,
+                        threats: [
+                            {
+                                id: "THREAT-CO-001",
+                                name: "Insecure Token Storage",
+                                category: "data-breach",
+                                description: "Payment tokens stored in plaintext",
+                                likelihood: 2,
+                                impact: 5
+                            }
+                        ],
+                        controls: [
+                            {
+                                id: "CTRL-CO-001",
+                                name: "Token Encryption",
+                                effectiveness: 95,
+                                type: "preventive"
+                            }
+                        ],
+                        riskScore: { inherent: 65, residual: 20 }
+                    }
+                ],
+                links: [
+                    { source: "customer-1", target: "business-payment", type: "uses" },
+                    { source: "business-payment", target: "app-payment-api", type: "implements" },
+                    { source: "app-payment-api", target: "comp-payment-handler", type: "contains" }
+                ]
+            },
+            2: {
+                name: "Authentication Chain",
+                description: "Complete authentication flow from login to token validation",
+                keyThreats: ["Token compromise", "Session hijacking", "Privilege escalation"],
+                nodes: [
+                    {
+                        id: "customer-2",
+                        name: "Customer Login",
+                        layer: "customer",
+                        x: 300,
+                        y: 100,
+                        threats: [
+                            {
+                                id: "THREAT-C2-001",
+                                name: "Credential Stuffing",
+                                category: "compromise",
+                                description: "Automated login attempts with breached credentials",
+                                likelihood: 5,
+                                impact: 4
+                            }
+                        ],
+                        controls: [
+                            {
+                                id: "CTRL-C2-001",
+                                name: "CAPTCHA",
+                                effectiveness: 70,
+                                type: "preventive"
+                            }
+                        ],
+                        riskScore: { inherent: 85, residual: 55 }
+                    },
+                    {
+                        id: "business-auth",
+                        name: "User Authentication",
+                        layer: "business",
+                        x: 300,
+                        y: 200,
+                        threats: [
+                            {
+                                id: "THREAT-B2-001",
+                                name: "Account Takeover",
+                                category: "compromise",
+                                description: "Unauthorized access to user accounts",
+                                likelihood: 4,
+                                impact: 5
+                            }
+                        ],
+                        controls: [
+                            {
+                                id: "CTRL-B2-001",
+                                name: "Risk-based Authentication",
+                                effectiveness: 85,
+                                type: "detective"
+                            }
+                        ],
+                        riskScore: { inherent: 90, residual: 50 }
+                    },
+                    {
+                        id: "app-auth-service",
+                        name: "Auth Service",
+                        layer: "application",
+                        x: 300,
+                        y: 300,
+                        threats: [
+                            {
+                                id: "THREAT-A2-001",
+                                name: "Session Fixation",
+                                category: "integrity",
+                                description: "Forcing users to use attacker-controlled sessions",
+                                likelihood: 3,
+                                impact: 4
+                            }
+                        ],
+                        controls: [
+                            {
+                                id: "CTRL-A2-001",
+                                name: "Session Regeneration",
+                                effectiveness: 90,
+                                type: "preventive"
+                            }
+                        ],
+                        riskScore: { inherent: 70, residual: 30 }
+                    },
+                    {
+                        id: "comp-auth-module",
+                        name: "Auth Component",
+                        layer: "component",
+                        x: 300,
+                        y: 400,
+                        threats: [
+                            {
+                                id: "THREAT-CO2-001",
+                                name: "Weak Password Policy",
+                                category: "compliance",
+                                description: "Insufficient password complexity requirements",
+                                likelihood: 4,
+                                impact: 3
+                            }
+                        ],
+                        controls: [
+                            {
+                                id: "CTRL-CO2-001",
+                                name: "Password Policy Engine",
+                                effectiveness: 80,
+                                type: "preventive"
+                            }
+                        ],
+                        riskScore: { inherent: 60, residual: 30 }
+                    },
+                    {
+                        id: "pkg-jwt",
+                        name: "JWT Package",
+                        layer: "package",
+                        x: 300,
+                        y: 500,
+                        threats: [
+                            {
+                                id: "THREAT-P2-001",
+                                name: "Algorithm Confusion",
+                                category: "integrity",
+                                description: "JWT algorithm substitution attack",
+                                likelihood: 2,
+                                impact: 5
+                            }
+                        ],
+                        controls: [
+                            {
+                                id: "CTRL-P2-001",
+                                name: "Algorithm Whitelist",
+                                effectiveness: 95,
+                                type: "preventive"
+                            }
+                        ],
+                        riskScore: { inherent: 65, residual: 15 }
+                    },
+                    {
+                        id: "method-validate-token",
+                        name: "validateToken()",
+                        layer: "method",
+                        x: 300,
+                        y: 600,
+                        threats: [
+                            {
+                                id: "THREAT-M2-001",
+                                name: "Timing Attack",
+                                category: "data-breach",
+                                description: "Token validation timing reveals information",
+                                likelihood: 2,
+                                impact: 3
+                            }
+                        ],
+                        controls: [
+                            {
+                                id: "CTRL-M2-001",
+                                name: "Constant Time Comparison",
+                                effectiveness: 100,
+                                type: "preventive"
+                            }
+                        ],
+                        riskScore: { inherent: 40, residual: 5 }
+                    }
+                ],
+                links: [
+                    { source: "customer-2", target: "business-auth", type: "initiates" },
+                    { source: "business-auth", target: "app-auth-service", type: "implements" },
+                    { source: "app-auth-service", target: "comp-auth-module", type: "contains" },
+                    { source: "comp-auth-module", target: "pkg-jwt", type: "uses" },
+                    { source: "pkg-jwt", target: "method-validate-token", type: "provides" }
+                ]
+            },
+            3: {
+                name: "Data Breach Path",
+                description: "SQL injection vulnerability traced from code to customer impact",
+                keyThreats: ["SQL Injection", "Data exfiltration", "PII exposure", "Compliance violation"],
+                nodes: [
+                    {
+                        id: "customer-3",
+                        name: "Customer Data",
+                        layer: "customer",
+                        x: 400,
+                        y: 100,
+                        threats: [
+                            {
+                                id: "THREAT-C3-001",
+                                name: "PII Exposure",
+                                category: "data-breach",
+                                description: "Personal information exposed in breach",
+                                likelihood: 5,
+                                impact: 5
+                            }
+                        ],
+                        controls: [
+                            {
+                                id: "CTRL-C3-001",
+                                name: "Breach Notification",
+                                effectiveness: 50,
+                                type: "corrective"
+                            }
+                        ],
+                        riskScore: { inherent: 95, residual: 75 }
+                    },
+                    {
+                        id: "business-account",
+                        name: "Account Management",
+                        layer: "business",
+                        x: 400,
+                        y: 200,
+                        threats: [
+                            {
+                                id: "THREAT-B3-001",
+                                name: "GDPR Violation",
+                                category: "compliance",
+                                description: "Non-compliance with data protection regulations",
+                                likelihood: 4,
+                                impact: 5
+                            }
+                        ],
+                        controls: [
+                            {
+                                id: "CTRL-B3-001",
+                                name: "Data Minimization",
+                                effectiveness: 70,
+                                type: "preventive"
+                            }
+                        ],
+                        riskScore: { inherent: 90, residual: 60 }
+                    },
+                    {
+                        id: "app-portal",
+                        name: "Customer Portal",
+                        layer: "application",
+                        x: 400,
+                        y: 300,
+                        threats: [
+                            {
+                                id: "THREAT-A3-001",
+                                name: "XSS Vulnerability",
+                                category: "integrity",
+                                description: "Cross-site scripting in user profile",
+                                likelihood: 4,
+                                impact: 3
+                            }
+                        ],
+                        controls: [
+                            {
+                                id: "CTRL-A3-001",
+                                name: "Input Sanitization",
+                                effectiveness: 85,
+                                type: "preventive"
+                            }
+                        ],
+                        riskScore: { inherent: 70, residual: 35 }
+                    },
+                    {
+                        id: "comp-profile",
+                        name: "User Profile Component",
+                        layer: "component",
+                        x: 400,
+                        y: 400,
+                        threats: [
+                            {
+                                id: "THREAT-CO3-001",
+                                name: "Insecure Direct Object Reference",
+                                category: "data-breach",
+                                description: "Access to other users' profiles via ID manipulation",
+                                likelihood: 3,
+                                impact: 4
+                            }
+                        ],
+                        controls: [
+                            {
+                                id: "CTRL-CO3-001",
+                                name: "Access Control Checks",
+                                effectiveness: 90,
+                                type: "preventive"
+                            }
+                        ],
+                        riskScore: { inherent: 65, residual: 25 }
+                    },
+                    {
+                        id: "pkg-database",
+                        name: "Database Package",
+                        layer: "package",
+                        x: 400,
+                        y: 500,
+                        threats: [
+                            {
+                                id: "THREAT-P3-001",
+                                name: "Connection String Exposure",
+                                category: "data-breach",
+                                description: "Database credentials in configuration",
+                                likelihood: 2,
+                                impact: 5
+                            }
+                        ],
+                        controls: [
+                            {
+                                id: "CTRL-P3-001",
+                                name: "Secrets Management",
+                                effectiveness: 95,
+                                type: "preventive"
+                            }
+                        ],
+                        riskScore: { inherent: 65, residual: 15 }
+                    },
+                    {
+                        id: "method-query",
+                        name: "executeQuery()",
+                        layer: "method",
+                        x: 400,
+                        y: 600,
+                        threats: [
+                            {
+                                id: "THREAT-M3-001",
+                                name: "Dynamic Query Construction",
+                                category: "integrity",
+                                description: "String concatenation in SQL queries",
+                                likelihood: 5,
+                                impact: 5
+                            }
+                        ],
+                        controls: [
+                            {
+                                id: "CTRL-M3-001",
+                                name: "Parameterized Queries",
+                                effectiveness: 95,
+                                type: "preventive"
+                            }
+                        ],
+                        riskScore: { inherent: 95, residual: 40 }
+                    },
+                    {
+                        id: "code-line245",
+                        name: "Line 245: SQL Query",
+                        layer: "code",
+                        x: 400,
+                        y: 700,
+                        threats: [
+                            {
+                                id: "THREAT-CD3-001",
+                                name: "SQL Injection",
+                                category: "data-breach",
+                                description: "Unvalidated user input in SQL query",
+                                likelihood: 5,
+                                impact: 5,
+                                cve: "CWE-89"
+                            }
+                        ],
+                        controls: [
+                            {
+                                id: "CTRL-CD3-001",
+                                name: "Static Analysis",
+                                effectiveness: 80,
+                                type: "detective"
+                            }
+                        ],
+                        riskScore: { inherent: 100, residual: 60 }
+                    }
+                ],
+                links: [
+                    { source: "customer-3", target: "business-account", type: "managed-by" },
+                    { source: "business-account", target: "app-portal", type: "implements" },
+                    { source: "app-portal", target: "comp-profile", type: "contains" },
+                    { source: "comp-profile", target: "pkg-database", type: "uses" },
+                    { source: "pkg-database", target: "method-query", type: "provides" },
+                    { source: "method-query", target: "code-line245", type: "executes", critical: true }
+                ]
+            },
+            4: {
+                name: "Third-Party Vulnerability",
+                description: "Supply chain attack through Stripe package CVE to infrastructure",
+                keyThreats: ["CVE-2023-12345", "Supply chain compromise", "Infrastructure breach", "Lateral movement"],
+                nodes: [
+                    {
+                        id: "customer-4",
+                        name: "Customer Orders",
+                        layer: "customer",
+                        x: 200,
+                        y: 100,
+                        threats: [
+                            {
+                                id: "THREAT-C4-001",
+                                name: "Payment Fraud",
+                                category: "compromise",
+                                description: "Fraudulent transactions processed",
+                                likelihood: 4,
+                                impact: 4
+                            }
+                        ],
+                        controls: [
+                            {
+                                id: "CTRL-C4-001",
+                                name: "Fraud Detection",
+                                effectiveness: 75,
+                                type: "detective"
+                            }
+                        ],
+                        riskScore: { inherent: 80, residual: 50 }
+                    },
+                    {
+                        id: "business-orders",
+                        name: "Order Processing",
+                        layer: "business",
+                        x: 250,
+                        y: 180,
+                        threats: [
+                            {
+                                id: "THREAT-B4-001",
+                                name: "Order Manipulation",
+                                category: "integrity",
+                                description: "Unauthorized order modifications",
+                                likelihood: 3,
+                                impact: 4
+                            }
+                        ],
+                        controls: [
+                            {
+                                id: "CTRL-B4-001",
+                                name: "Order Integrity Checks",
+                                effectiveness: 85,
+                                type: "detective"
+                            }
+                        ],
+                        riskScore: { inherent: 70, residual: 35 }
+                    },
+                    {
+                        id: "app-order-service",
+                        name: "Order Service",
+                        layer: "application",
+                        x: 300,
+                        y: 260,
+                        threats: [
+                            {
+                                id: "THREAT-A4-001",
+                                name: "Service Compromise",
+                                category: "compromise",
+                                description: "Malicious code execution in service",
+                                likelihood: 3,
+                                impact: 5
+                            }
+                        ],
+                        controls: [
+                            {
+                                id: "CTRL-A4-001",
+                                name: "Container Scanning",
+                                effectiveness: 80,
+                                type: "detective"
+                            }
+                        ],
+                        riskScore: { inherent: 75, residual: 40 }
+                    },
+                    {
+                        id: "comp-payment-gateway",
+                        name: "Payment Gateway",
+                        layer: "component",
+                        x: 350,
+                        y: 340,
+                        threats: [
+                            {
+                                id: "THREAT-CO4-001",
+                                name: "Gateway Bypass",
+                                category: "integrity",
+                                description: "Payment validation bypass",
+                                likelihood: 2,
+                                impact: 5
+                            }
+                        ],
+                        controls: [
+                            {
+                                id: "CTRL-CO4-001",
+                                name: "Gateway Redundancy",
+                                effectiveness: 90,
+                                type: "corrective"
+                            }
+                        ],
+                        riskScore: { inherent: 65, residual: 25 }
+                    },
+                    {
+                        id: "pkg-stripe",
+                        name: "stripe-python 5.1.0",
+                        layer: "package",
+                        x: 400,
+                        y: 420,
+                        threats: [
+                            {
+                                id: "THREAT-P4-001",
+                                name: "Authentication Bypass",
+                                category: "compromise",
+                                description: "CVE-2023-12345 allows auth bypass",
+                                likelihood: 5,
+                                impact: 5,
+                                cve: "CVE-2023-12345"
+                            }
+                        ],
+                        controls: [
+                            {
+                                id: "CTRL-P4-001",
+                                name: "Dependency Scanning",
+                                effectiveness: 70,
+                                type: "detective"
+                            }
+                        ],
+                        riskScore: { inherent: 95, residual: 70 }
+                    },
+                    {
+                        id: "class-payment",
+                        name: "PaymentProcessor",
+                        layer: "class",
+                        x: 450,
+                        y: 500,
+                        threats: [
+                            {
+                                id: "THREAT-CL4-001",
+                                name: "Class Injection",
+                                category: "integrity",
+                                description: "Malicious code injection via reflection",
+                                likelihood: 3,
+                                impact: 4
+                            }
+                        ],
+                        controls: [
+                            {
+                                id: "CTRL-CL4-001",
+                                name: "Code Signing",
+                                effectiveness: 85,
+                                type: "preventive"
+                            }
+                        ],
+                        riskScore: { inherent: 70, residual: 30 }
+                    },
+                    {
+                        id: "method-process",
+                        name: "processPayment()",
+                        layer: "method",
+                        x: 500,
+                        y: 580,
+                        threats: [
+                            {
+                                id: "THREAT-M4-001",
+                                name: "Race Condition",
+                                category: "integrity",
+                                description: "Double-spending via race condition",
+                                likelihood: 2,
+                                impact: 4
+                            }
+                        ],
+                        controls: [
+                            {
+                                id: "CTRL-M4-001",
+                                name: "Transaction Locking",
+                                effectiveness: 95,
+                                type: "preventive"
+                            }
+                        ],
+                        riskScore: { inherent: 55, residual: 15 }
+                    },
+                    {
+                        id: "env-python",
+                        name: "Python 3.11",
+                        layer: "environment",
+                        x: 550,
+                        y: 660,
+                        threats: [
+                            {
+                                id: "THREAT-E4-001",
+                                name: "Interpreter Vulnerability",
+                                category: "compromise",
+                                description: "Python interpreter security flaw",
+                                likelihood: 2,
+                                impact: 4
+                            }
+                        ],
+                        controls: [
+                            {
+                                id: "CTRL-E4-001",
+                                name: "Runtime Patching",
+                                effectiveness: 90,
+                                type: "corrective"
+                            }
+                        ],
+                        riskScore: { inherent: 50, residual: 20 }
+                    },
+                    {
+                        id: "runtime-lambda",
+                        name: "AWS Lambda",
+                        layer: "runtime",
+                        x: 600,
+                        y: 740,
+                        threats: [
+                            {
+                                id: "THREAT-R4-001",
+                                name: "Function Injection",
+                                category: "compromise",
+                                description: "Malicious function deployment",
+                                likelihood: 2,
+                                impact: 5
+                            }
+                        ],
+                        controls: [
+                            {
+                                id: "CTRL-R4-001",
+                                name: "IAM Policies",
+                                effectiveness: 95,
+                                type: "preventive"
+                            }
+                        ],
+                        riskScore: { inherent: 60, residual: 15 }
+                    },
+                    {
+                        id: "compute-aws",
+                        name: "AWS us-east-1",
+                        layer: "compute",
+                        x: 650,
+                        y: 820,
+                        threats: [
+                            {
+                                id: "THREAT-CM4-001",
+                                name: "Region Outage",
+                                category: "availability",
+                                description: "AWS region-wide service disruption",
+                                likelihood: 1,
+                                impact: 5
+                            }
+                        ],
+                        controls: [
+                            {
+                                id: "CTRL-CM4-001",
+                                name: "Multi-Region Failover",
+                                effectiveness: 95,
+                                type: "corrective"
+                            }
+                        ],
+                        riskScore: { inherent: 40, residual: 10 }
+                    }
+                ],
+                links: [
+                    { source: "customer-4", target: "business-orders", type: "initiates" },
+                    { source: "business-orders", target: "app-order-service", type: "implements" },
+                    { source: "app-order-service", target: "comp-payment-gateway", type: "contains" },
+                    { source: "comp-payment-gateway", target: "pkg-stripe", type: "uses", critical: true },
+                    { source: "pkg-stripe", target: "class-payment", type: "provides" },
+                    { source: "class-payment", target: "method-process", type: "contains" },
+                    { source: "method-process", target: "env-python", type: "executes-in" },
+                    { source: "env-python", target: "runtime-lambda", type: "runs-on" },
+                    { source: "runtime-lambda", target: "compute-aws", type: "hosted-on" }
+                ]
+            },
+            5: {
+                name: "Microservices Mesh",
+                description: "Complex service interdependencies with lateral movement risks",
+                keyThreats: ["Service compromise", "Lateral movement", "Data leakage", "Cascading failures"],
+                nodes: [
+                    // Customer Layer
+                    {
+                        id: "customer-5",
+                        name: "Customer Experience",
+                        layer: "customer",
+                        x: 400,
+                        y: 100,
+                        threats: [
+                            {
+                                id: "THREAT-C5-001",
+                                name: "Service Degradation",
+                                category: "availability",
+                                description: "Poor user experience due to service failures",
+                                likelihood: 4,
+                                impact: 3
+                            }
+                        ],
+                        controls: [
+                            {
+                                id: "CTRL-C5-001",
+                                name: "Service Monitoring",
+                                effectiveness: 80,
+                                type: "detective"
+                            }
+                        ],
+                        riskScore: { inherent: 70, residual: 40 }
+                    },
+                    // Business Layer - Multiple Functions
+                    {
+                        id: "business-payment-5",
+                        name: "Payment Processing",
+                        layer: "business",
+                        x: 200,
+                        y: 200,
+                        threats: [
+                            {
+                                id: "THREAT-B5-001",
+                                name: "Transaction Integrity",
+                                category: "integrity",
+                                description: "Payment data corruption across services",
+                                likelihood: 3,
+                                impact: 5
+                            }
+                        ],
+                        controls: [
+                            {
+                                id: "CTRL-B5-001",
+                                name: "Transaction Validation",
+                                effectiveness: 90,
+                                type: "preventive"
+                            }
+                        ],
+                        riskScore: { inherent: 75, residual: 30 }
+                    },
+                    {
+                        id: "business-inventory",
+                        name: "Inventory Management",
+                        layer: "business",
+                        x: 400,
+                        y: 200,
+                        threats: [
+                            {
+                                id: "THREAT-B5-002",
+                                name: "Stock Manipulation",
+                                category: "integrity",
+                                description: "Inventory count tampering",
+                                likelihood: 3,
+                                impact: 4
+                            }
+                        ],
+                        controls: [
+                            {
+                                id: "CTRL-B5-002",
+                                name: "Inventory Reconciliation",
+                                effectiveness: 85,
+                                type: "detective"
+                            }
+                        ],
+                        riskScore: { inherent: 65, residual: 30 }
+                    },
+                    {
+                        id: "business-shipping",
+                        name: "Shipping & Fulfillment",
+                        layer: "business",
+                        x: 600,
+                        y: 200,
+                        threats: [
+                            {
+                                id: "THREAT-B5-003",
+                                name: "Shipping Data Leak",
+                                category: "data-breach",
+                                description: "Customer address exposure",
+                                likelihood: 3,
+                                impact: 4
+                            }
+                        ],
+                        controls: [
+                            {
+                                id: "CTRL-B5-003",
+                                name: "Data Encryption",
+                                effectiveness: 95,
+                                type: "preventive"
+                            }
+                        ],
+                        riskScore: { inherent: 60, residual: 20 }
+                    },
+                    // Application Layer - Interconnected Services
+                    {
+                        id: "app-payment-svc",
+                        name: "Payment Service",
+                        layer: "application",
+                        x: 150,
+                        y: 350,
+                        threats: [
+                            {
+                                id: "THREAT-A5-001",
+                                name: "Service Account Compromise",
+                                category: "compromise",
+                                description: "Service-to-service auth breach",
+                                likelihood: 3,
+                                impact: 5
+                            }
+                        ],
+                        controls: [
+                            {
+                                id: "CTRL-A5-001",
+                                name: "mTLS",
+                                effectiveness: 90,
+                                type: "preventive"
+                            }
+                        ],
+                        riskScore: { inherent: 75, residual: 30 }
+                    },
+                    {
+                        id: "app-order-svc",
+                        name: "Order Service",
+                        layer: "application",
+                        x: 300,
+                        y: 350,
+                        threats: [
+                            {
+                                id: "THREAT-A5-002",
+                                name: "Message Queue Poisoning",
+                                category: "integrity",
+                                description: "Malicious messages in queue",
+                                likelihood: 3,
+                                impact: 4
+                            }
+                        ],
+                        controls: [
+                            {
+                                id: "CTRL-A5-002",
+                                name: "Message Validation",
+                                effectiveness: 85,
+                                type: "preventive"
+                            }
+                        ],
+                        riskScore: { inherent: 65, residual: 30 }
+                    },
+                    {
+                        id: "app-inventory-svc",
+                        name: "Inventory Service",
+                        layer: "application",
+                        x: 450,
+                        y: 350,
+                        threats: [
+                            {
+                                id: "THREAT-A5-003",
+                                name: "API Gateway Bypass",
+                                category: "compromise",
+                                description: "Direct service access",
+                                likelihood: 2,
+                                impact: 4
+                            }
+                        ],
+                        controls: [
+                            {
+                                id: "CTRL-A5-003",
+                                name: "Network Policies",
+                                effectiveness: 95,
+                                type: "preventive"
+                            }
+                        ],
+                        riskScore: { inherent: 55, residual: 15 }
+                    },
+                    {
+                        id: "app-shipping-svc",
+                        name: "Shipping Service",
+                        layer: "application",
+                        x: 600,
+                        y: 350,
+                        threats: [
+                            {
+                                id: "THREAT-A5-004",
+                                name: "External API Key Leak",
+                                category: "data-breach",
+                                description: "Third-party API credentials exposed",
+                                likelihood: 3,
+                                impact: 4
+                            }
+                        ],
+                        controls: [
+                            {
+                                id: "CTRL-A5-004",
+                                name: "Secrets Rotation",
+                                effectiveness: 80,
+                                type: "preventive"
+                            }
+                        ],
+                        riskScore: { inherent: 60, residual: 30 }
+                    },
+                    {
+                        id: "app-notification-svc",
+                        name: "Notification Service",
+                        layer: "application",
+                        x: 375,
+                        y: 450,
+                        threats: [
+                            {
+                                id: "THREAT-A5-005",
+                                name: "Message Spoofing",
+                                category: "integrity",
+                                description: "Fake notifications sent to users",
+                                likelihood: 3,
+                                impact: 3
+                            }
+                        ],
+                        controls: [
+                            {
+                                id: "CTRL-A5-005",
+                                name: "Message Signing",
+                                effectiveness: 90,
+                                type: "preventive"
+                            }
+                        ],
+                        riskScore: { inherent: 50, residual: 20 }
+                    },
+                    // Component Layer - Shared Components
+                    {
+                        id: "comp-auth",
+                        name: "Auth Component",
+                        layer: "component",
+                        x: 200,
+                        y: 500,
+                        threats: [
+                            {
+                                id: "THREAT-CO5-001",
+                                name: "Token Replay",
+                                category: "compromise",
+                                description: "Replay attacks on auth tokens",
+                                likelihood: 3,
+                                impact: 4
+                            }
+                        ],
+                        controls: [
+                            {
+                                id: "CTRL-CO5-001",
+                                name: "Token Expiry",
+                                effectiveness: 85,
+                                type: "preventive"
+                            }
+                        ],
+                        riskScore: { inherent: 60, residual: 25 }
+                    },
+                    {
+                        id: "comp-messaging",
+                        name: "Message Queue",
+                        layer: "component",
+                        x: 375,
+                        y: 550,
+                        threats: [
+                            {
+                                id: "THREAT-CO5-002",
+                                name: "Queue Overflow",
+                                category: "availability",
+                                description: "DoS via message flooding",
+                                likelihood: 4,
+                                impact: 3
+                            }
+                        ],
+                        controls: [
+                            {
+                                id: "CTRL-CO5-002",
+                                name: "Rate Limiting",
+                                effectiveness: 80,
+                                type: "preventive"
+                            }
+                        ],
+                        riskScore: { inherent: 55, residual: 25 }
+                    },
+                    {
+                        id: "comp-cache",
+                        name: "Distributed Cache",
+                        layer: "component",
+                        x: 550,
+                        y: 500,
+                        threats: [
+                            {
+                                id: "THREAT-CO5-003",
+                                name: "Cache Poisoning",
+                                category: "integrity",
+                                description: "Malicious data in cache",
+                                likelihood: 3,
+                                impact: 4
+                            }
+                        ],
+                        controls: [
+                            {
+                                id: "CTRL-CO5-003",
+                                name: "Cache Validation",
+                                effectiveness: 85,
+                                type: "preventive"
+                            }
+                        ],
+                        riskScore: { inherent: 60, residual: 25 }
+                    },
+                    // Runtime Layer - Kubernetes
+                    {
+                        id: "runtime-k8s-cluster",
+                        name: "Kubernetes Cluster",
+                        layer: "runtime",
+                        x: 375,
+                        y: 700,
+                        threats: [
+                            {
+                                id: "THREAT-R5-001",
+                                name: "Container Escape",
+                                category: "compromise",
+                                description: "Breaking out of container isolation",
+                                likelihood: 2,
+                                impact: 5
+                            }
+                        ],
+                        controls: [
+                            {
+                                id: "CTRL-R5-001",
+                                name: "Pod Security Policies",
+                                effectiveness: 90,
+                                type: "preventive"
+                            }
+                        ],
+                        riskScore: { inherent: 65, residual: 20 }
+                    },
+                    // Compute Layer
+                    {
+                        id: "compute-gke",
+                        name: "GKE Multi-Zone",
+                        layer: "compute",
+                        x: 375,
+                        y: 800,
+                        threats: [
+                            {
+                                id: "THREAT-CM5-001",
+                                name: "Zone Failure",
+                                category: "availability",
+                                description: "Single zone outage",
+                                likelihood: 2,
+                                impact: 3
+                            }
+                        ],
+                        controls: [
+                            {
+                                id: "CTRL-CM5-001",
+                                name: "Multi-Zone Deployment",
+                                effectiveness: 95,
+                                type: "corrective"
+                            }
+                        ],
+                        riskScore: { inherent: 40, residual: 10 }
+                    }
+                ],
+                links: [
+                    // Customer to Business
+                    { source: "customer-5", target: "business-payment-5", type: "uses" },
+                    { source: "customer-5", target: "business-inventory", type: "uses" },
+                    { source: "customer-5", target: "business-shipping", type: "uses" },
+                    // Business to Application
+                    { source: "business-payment-5", target: "app-payment-svc", type: "implements" },
+                    { source: "business-inventory", target: "app-inventory-svc", type: "implements" },
+                    { source: "business-shipping", target: "app-shipping-svc", type: "implements" },
+                    // Service Mesh Connections
+                    { source: "app-order-svc", target: "app-payment-svc", type: "calls" },
+                    { source: "app-order-svc", target: "app-inventory-svc", type: "calls" },
+                    { source: "app-order-svc", target: "app-shipping-svc", type: "calls" },
+                    { source: "app-payment-svc", target: "app-notification-svc", type: "publishes" },
+                    { source: "app-shipping-svc", target: "app-notification-svc", type: "publishes" },
+                    // Services to Components
+                    { source: "app-payment-svc", target: "comp-auth", type: "uses" },
+                    { source: "app-order-svc", target: "comp-auth", type: "uses" },
+                    { source: "app-inventory-svc", target: "comp-auth", type: "uses" },
+                    { source: "app-shipping-svc", target: "comp-auth", type: "uses" },
+                    { source: "app-notification-svc", target: "comp-messaging", type: "uses" },
+                    { source: "app-order-svc", target: "comp-messaging", type: "uses" },
+                    { source: "app-inventory-svc", target: "comp-cache", type: "uses" },
+                    { source: "app-payment-svc", target: "comp-cache", type: "uses" },
+                    // Components to Runtime
+                    { source: "comp-auth", target: "runtime-k8s-cluster", type: "runs-on" },
+                    { source: "comp-messaging", target: "runtime-k8s-cluster", type: "runs-on" },
+                    { source: "comp-cache", target: "runtime-k8s-cluster", type: "runs-on" },
+                    // Runtime to Compute
+                    { source: "runtime-k8s-cluster", target: "compute-gke", type: "hosted-on" }
+                ]
+            },
+            6: {
+                name: "Full E-Commerce System",
+                description: "Complete threat model across all business functions and infrastructure",
+                keyThreats: ["Cascading failures", "Data breaches", "Supply chain attacks", "Infrastructure compromise", "Compliance violations"],
+                nodes: [
+                    // Customer Layer
+                    {
+                        id: "customer-6",
+                        name: "E-Commerce Customers",
+                        layer: "customer",
+                        x: 400,
+                        y: 50,
+                        threats: [
+                            {
+                                id: "THREAT-C6-001",
+                                name: "Account Takeover",
+                                category: "compromise",
+                                description: "Mass customer account compromise",
+                                likelihood: 4,
+                                impact: 5
+                            }
+                        ],
+                        controls: [
+                            {
+                                id: "CTRL-C6-001",
+                                name: "Multi-Factor Authentication",
+                                effectiveness: 85,
+                                type: "preventive"
+                            }
+                        ],
+                        riskScore: { inherent: 90, residual: 45 }
+                    },
+                    // Business Layer - All Functions
+                    {
+                        id: "business-payment-6",
+                        name: "Payment Processing",
+                        layer: "business",
+                        x: 150,
+                        y: 150,
+                        threats: [
+                            {
+                                id: "THREAT-B6-001",
+                                name: "Payment Fraud",
+                                category: "compromise",
+                                description: "Large-scale payment fraud",
+                                likelihood: 4,
+                                impact: 5
+                            }
+                        ],
+                        controls: [
+                            {
+                                id: "CTRL-B6-001",
+                                name: "ML Fraud Detection",
+                                effectiveness: 80,
+                                type: "detective"
+                            }
+                        ],
+                        riskScore: { inherent: 85, residual: 45 }
+                    },
+                    {
+                        id: "business-orders-6",
+                        name: "Order Management",
+                        layer: "business",
+                        x: 300,
+                        y: 150,
+                        threats: [
+                            {
+                                id: "THREAT-B6-002",
+                                name: "Order Manipulation",
+                                category: "integrity",
+                                description: "Bulk order tampering",
+                                likelihood: 3,
+                                impact: 4
+                            }
+                        ],
+                        controls: [
+                            {
+                                id: "CTRL-B6-002",
+                                name: "Order Validation Pipeline",
+                                effectiveness: 85,
+                                type: "preventive"
+                            }
+                        ],
+                        riskScore: { inherent: 70, residual: 35 }
+                    },
+                    {
+                        id: "business-inventory-6",
+                        name: "Inventory Control",
+                        layer: "business",
+                        x: 450,
+                        y: 150,
+                        threats: [
+                            {
+                                id: "THREAT-B6-003",
+                                name: "Stock Manipulation",
+                                category: "integrity",
+                                description: "Inventory database compromise",
+                                likelihood: 3,
+                                impact: 4
+                            }
+                        ],
+                        controls: [
+                            {
+                                id: "CTRL-B6-003",
+                                name: "Real-time Reconciliation",
+                                effectiveness: 90,
+                                type: "detective"
+                            }
+                        ],
+                        riskScore: { inherent: 65, residual: 25 }
+                    },
+                    {
+                        id: "business-shipping-6",
+                        name: "Shipping Logistics",
+                        layer: "business",
+                        x: 600,
+                        y: 150,
+                        threats: [
+                            {
+                                id: "THREAT-B6-004",
+                                name: "Shipping Data Breach",
+                                category: "data-breach",
+                                description: "Customer PII exposure",
+                                likelihood: 3,
+                                impact: 5
+                            }
+                        ],
+                        controls: [
+                            {
+                                id: "CTRL-B6-004",
+                                name: "End-to-End Encryption",
+                                effectiveness: 95,
+                                type: "preventive"
+                            }
+                        ],
+                        riskScore: { inherent: 75, residual: 20 }
+                    },
+                    {
+                        id: "business-support-6",
+                        name: "Customer Support",
+                        layer: "business",
+                        x: 750,
+                        y: 150,
+                        threats: [
+                            {
+                                id: "THREAT-B6-005",
+                                name: "Social Engineering",
+                                category: "compromise",
+                                description: "Support agent compromise",
+                                likelihood: 4,
+                                impact: 4
+                            }
+                        ],
+                        controls: [
+                            {
+                                id: "CTRL-B6-005",
+                                name: "Agent Training Program",
+                                effectiveness: 70,
+                                type: "preventive"
+                            }
+                        ],
+                        riskScore: { inherent: 80, residual: 50 }
+                    },
+                    // Application Layer - All Services
+                    {
+                        id: "app-gateway",
+                        name: "API Gateway",
+                        layer: "application",
+                        x: 400,
+                        y: 250,
+                        threats: [
+                            {
+                                id: "THREAT-A6-001",
+                                name: "Gateway Compromise",
+                                category: "compromise",
+                                description: "Central gateway breach",
+                                likelihood: 2,
+                                impact: 5
+                            }
+                        ],
+                        controls: [
+                            {
+                                id: "CTRL-A6-001",
+                                name: "WAF + DDoS Protection",
+                                effectiveness: 90,
+                                type: "preventive"
+                            }
+                        ],
+                        riskScore: { inherent: 65, residual: 20 }
+                    },
+                    {
+                        id: "app-payment-6",
+                        name: "Payment Service",
+                        layer: "application",
+                        x: 100,
+                        y: 350,
+                        threats: [],
+                        controls: [],
+                        riskScore: { inherent: 70, residual: 30 }
+                    },
+                    {
+                        id: "app-order-6",
+                        name: "Order Service",
+                        layer: "application",
+                        x: 250,
+                        y: 350,
+                        threats: [],
+                        controls: [],
+                        riskScore: { inherent: 65, residual: 30 }
+                    },
+                    {
+                        id: "app-inventory-6",
+                        name: "Inventory Service",
+                        layer: "application",
+                        x: 400,
+                        y: 350,
+                        threats: [],
+                        controls: [],
+                        riskScore: { inherent: 60, residual: 25 }
+                    },
+                    {
+                        id: "app-shipping-6",
+                        name: "Shipping Service",
+                        layer: "application",
+                        x: 550,
+                        y: 350,
+                        threats: [],
+                        controls: [],
+                        riskScore: { inherent: 65, residual: 30 }
+                    },
+                    {
+                        id: "app-user-6",
+                        name: "User Service",
+                        layer: "application",
+                        x: 700,
+                        y: 350,
+                        threats: [],
+                        controls: [],
+                        riskScore: { inherent: 75, residual: 35 }
+                    },
+                    {
+                        id: "app-search-6",
+                        name: "Search Service",
+                        layer: "application",
+                        x: 250,
+                        y: 450,
+                        threats: [],
+                        controls: [],
+                        riskScore: { inherent: 50, residual: 25 }
+                    },
+                    {
+                        id: "app-recommendation-6",
+                        name: "Recommendation Engine",
+                        layer: "application",
+                        x: 550,
+                        y: 450,
+                        threats: [],
+                        controls: [],
+                        riskScore: { inherent: 55, residual: 25 }
+                    },
+                    // Component Layer - Key Components
+                    {
+                        id: "comp-auth-6",
+                        name: "Auth Framework",
+                        layer: "component",
+                        x: 200,
+                        y: 550,
+                        threats: [],
+                        controls: [],
+                        riskScore: { inherent: 80, residual: 30 }
+                    },
+                    {
+                        id: "comp-database-6",
+                        name: "Database Layer",
+                        layer: "component",
+                        x: 400,
+                        y: 550,
+                        threats: [],
+                        controls: [],
+                        riskScore: { inherent: 85, residual: 35 }
+                    },
+                    {
+                        id: "comp-cache-6",
+                        name: "Cache Layer",
+                        layer: "component",
+                        x: 600,
+                        y: 550,
+                        threats: [],
+                        controls: [],
+                        riskScore: { inherent: 60, residual: 25 }
+                    },
+                    // Package Layer - Critical Dependencies
+                    {
+                        id: "pkg-payments-6",
+                        name: "Payment SDKs",
+                        layer: "package",
+                        x: 150,
+                        y: 650,
+                        threats: [],
+                        controls: [],
+                        riskScore: { inherent: 75, residual: 40 }
+                    },
+                    {
+                        id: "pkg-security-6",
+                        name: "Security Libraries",
+                        layer: "package",
+                        x: 400,
+                        y: 650,
+                        threats: [],
+                        controls: [],
+                        riskScore: { inherent: 70, residual: 25 }
+                    },
+                    {
+                        id: "pkg-analytics-6",
+                        name: "Analytics SDKs",
+                        layer: "package",
+                        x: 650,
+                        y: 650,
+                        threats: [],
+                        controls: [],
+                        riskScore: { inherent: 55, residual: 25 }
+                    },
+                    // Runtime Layer - Mixed Infrastructure
+                    {
+                        id: "runtime-k8s-6",
+                        name: "Kubernetes Clusters",
+                        layer: "runtime",
+                        x: 300,
+                        y: 750,
+                        threats: [],
+                        controls: [],
+                        riskScore: { inherent: 70, residual: 25 }
+                    },
+                    {
+                        id: "runtime-lambda-6",
+                        name: "Serverless Functions",
+                        layer: "runtime",
+                        x: 500,
+                        y: 750,
+                        threats: [],
+                        controls: [],
+                        riskScore: { inherent: 60, residual: 20 }
+                    },
+                    // Compute Layer - Multi-Cloud
+                    {
+                        id: "compute-aws-6",
+                        name: "AWS Multi-Region",
+                        layer: "compute",
+                        x: 200,
+                        y: 850,
+                        threats: [],
+                        controls: [],
+                        riskScore: { inherent: 50, residual: 15 }
+                    },
+                    {
+                        id: "compute-gcp-6",
+                        name: "GCP Services",
+                        layer: "compute",
+                        x: 400,
+                        y: 850,
+                        threats: [],
+                        controls: [],
+                        riskScore: { inherent: 50, residual: 15 }
+                    },
+                    {
+                        id: "compute-azure-6",
+                        name: "Azure CDN",
+                        layer: "compute",
+                        x: 600,
+                        y: 850,
+                        threats: [],
+                        controls: [],
+                        riskScore: { inherent: 45, residual: 15 }
+                    }
+                ],
+                links: [
+                    // Customer to Business
+                    { source: "customer-6", target: "business-payment-6", type: "uses" },
+                    { source: "customer-6", target: "business-orders-6", type: "uses" },
+                    { source: "customer-6", target: "business-inventory-6", type: "uses" },
+                    { source: "customer-6", target: "business-shipping-6", type: "uses" },
+                    { source: "customer-6", target: "business-support-6", type: "uses" },
+                    // Business to Gateway
+                    { source: "business-payment-6", target: "app-gateway", type: "routes-through" },
+                    { source: "business-orders-6", target: "app-gateway", type: "routes-through" },
+                    { source: "business-inventory-6", target: "app-gateway", type: "routes-through" },
+                    { source: "business-shipping-6", target: "app-gateway", type: "routes-through" },
+                    { source: "business-support-6", target: "app-gateway", type: "routes-through" },
+                    // Gateway to Services
+                    { source: "app-gateway", target: "app-payment-6", type: "routes" },
+                    { source: "app-gateway", target: "app-order-6", type: "routes" },
+                    { source: "app-gateway", target: "app-inventory-6", type: "routes" },
+                    { source: "app-gateway", target: "app-shipping-6", type: "routes" },
+                    { source: "app-gateway", target: "app-user-6", type: "routes" },
+                    // Service Mesh
+                    { source: "app-order-6", target: "app-payment-6", type: "calls" },
+                    { source: "app-order-6", target: "app-inventory-6", type: "calls" },
+                    { source: "app-order-6", target: "app-shipping-6", type: "calls" },
+                    { source: "app-user-6", target: "app-search-6", type: "calls" },
+                    { source: "app-user-6", target: "app-recommendation-6", type: "calls" },
+                    // Services to Components
+                    { source: "app-payment-6", target: "comp-auth-6", type: "uses" },
+                    { source: "app-order-6", target: "comp-database-6", type: "uses" },
+                    { source: "app-inventory-6", target: "comp-database-6", type: "uses" },
+                    { source: "app-search-6", target: "comp-cache-6", type: "uses" },
+                    // Components to Packages
+                    { source: "comp-auth-6", target: "pkg-security-6", type: "depends-on" },
+                    { source: "comp-database-6", target: "pkg-analytics-6", type: "depends-on" },
+                    { source: "app-payment-6", target: "pkg-payments-6", type: "depends-on" },
+                    // Services to Runtime
+                    { source: "app-order-6", target: "runtime-k8s-6", type: "runs-on" },
+                    { source: "app-payment-6", target: "runtime-k8s-6", type: "runs-on" },
+                    { source: "app-search-6", target: "runtime-lambda-6", type: "runs-on" },
+                    { source: "app-recommendation-6", target: "runtime-lambda-6", type: "runs-on" },
+                    // Runtime to Compute
+                    { source: "runtime-k8s-6", target: "compute-aws-6", type: "hosted-on" },
+                    { source: "runtime-k8s-6", target: "compute-gcp-6", type: "hosted-on" },
+                    { source: "runtime-lambda-6", target: "compute-aws-6", type: "hosted-on" },
+                    { source: "app-gateway", target: "compute-azure-6", type: "hosted-on" }
+                ]
+            }
+        };
+
+        // Layer colors
+        const layerColors = {
+            customer: '#6366f1',
+            business: '#1e3a8a',
+            application: '#6b21a8',
+            component: '#be185d',
+            package: '#ea580c',
+            class: '#dc2626',
+            method: '#ca8a04',
+            code: '#84cc16',
+            environment: '#16a34a',
+            runtime: '#0891b2',
+            compute: '#2563eb'
+        };
+
+        // Current scenario
+        let currentScenario = 1;
+        let currentView = 'graph';
+
+        // Helper functions
+        function getRiskColor(score) {
+            if (score >= 75) return '#ef4444';
+            if (score >= 50) return '#f97316';
+            if (score >= 25) return '#facc15';
+            return '#22c55e';
+        }
+
+        function getLikelihoodColor(score) {
+            if (score >= 4) return '#ef4444';
+            if (score >= 3) return '#f97316';
+            if (score >= 2) return '#facc15';
+            return '#22c55e';
+        }
+
+        function getImpactColor(score) {
+            return getLikelihoodColor(score);
+        }
+
+        // View switching functionality
+        function switchView(viewType) {
+            currentView = viewType;
+            
+            // Update active button
+            document.querySelectorAll('.view-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.view === viewType);
+            });
+            
+            // Load current scenario with new view
+            const scenario = scenarios[currentScenario];
+            
+            switch(viewType) {
+                case 'graph':
+                    drawGraph(scenario);
+                    break;
+                case 'matrix':
+                    drawRiskMatrix(scenario);
+                    break;
+                case 'flow':
+                    drawAttackFlow(scenario);
+                    break;
+            }
+        }
+
+        // Risk Matrix View
+        function drawRiskMatrix(scenario) {
+            // Clear existing content
+            d3.select('#graph-container svg').remove();
+            
+            const container = document.getElementById('graph-container');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            
+            const svg = d3.select('#graph-container')
+                .append('svg')
+                .attr('width', width)
+                .attr('height', height);
+            
+            const margin = {top: 50, right: 50, bottom: 50, left: 50};
+            const chartWidth = width - margin.left - margin.right;
+            const chartHeight = height - margin.top - margin.bottom;
+            
+            const g = svg.append('g')
+                .attr('transform', `translate(${margin.left},${margin.top})`);
+            
+            // Collect all threats from scenario
+            const allThreats = [];
+            scenario.nodes.forEach(node => {
+                if (node.threats) {
+                    node.threats.forEach(threat => {
+                        allThreats.push({
+                            ...threat,
+                            nodeName: node.name,
+                            nodeLayer: node.layer
+                        });
+                    });
+                }
+            });
+            
+            // Create scales
+            const xScale = d3.scaleLinear()
+                .domain([0, 5])
+                .range([0, chartWidth]);
+            
+            const yScale = d3.scaleLinear()
+                .domain([0, 5])
+                .range([chartHeight, 0]);
+            
+            // Create grid
+            const gridLines = g.append('g').attr('class', 'grid');
+            
+            // Vertical grid lines
+            for (let i = 0; i <= 5; i++) {
+                gridLines.append('line')
+                    .attr('x1', xScale(i))
+                    .attr('x2', xScale(i))
+                    .attr('y1', 0)
+                    .attr('y2', chartHeight)
+                    .attr('stroke', '#333')
+                    .attr('stroke-opacity', 0.3);
+            }
+            
+            // Horizontal grid lines
+            for (let i = 0; i <= 5; i++) {
+                gridLines.append('line')
+                    .attr('x1', 0)
+                    .attr('x2', chartWidth)
+                    .attr('y1', yScale(i))
+                    .attr('y2', yScale(i))
+                    .attr('stroke', '#333')
+                    .attr('stroke-opacity', 0.3);
+            }
+            
+            // Risk zones
+            const riskZones = [
+                {level: 'Low', color: '#22c55e', opacity: 0.1, paths: [[0,0], [2,0], [3,1], [1,3], [0,2]]},
+                {level: 'Medium', color: '#facc15', opacity: 0.15, paths: [[2,0], [4,0], [5,1], [4,2], [3,1]]},
+                {level: 'High', color: '#f97316', opacity: 0.2, paths: [[0,2], [1,3], [2,4], [0,5]]},
+                {level: 'Critical', color: '#ef4444', opacity: 0.25, paths: [[4,2], [5,1], [5,5], [2,4], [1,3], [3,1]]}
+            ];
+            
+            riskZones.forEach(zone => {
+                const pathData = zone.paths.map((point, i) => 
+                    `${i === 0 ? 'M' : 'L'} ${xScale(point[0])} ${yScale(point[1])}`
+                ).join(' ') + ' Z';
+                
+                g.append('path')
+                    .attr('d', pathData)
+                    .attr('fill', zone.color)
+                    .attr('fill-opacity', zone.opacity)
+                    .attr('stroke', zone.color)
+                    .attr('stroke-opacity', 0.3);
+            });
+            
+            // Add axes
+            g.append('g')
+                .attr('transform', `translate(0,${chartHeight})`)
+                .call(d3.axisBottom(xScale).ticks(5))
+                .selectAll('text')
+                .style('fill', '#fff');
+            
+            g.append('g')
+                .call(d3.axisLeft(yScale).ticks(5))
+                .selectAll('text')
+                .style('fill', '#fff');
+            
+            // Axis labels
+            g.append('text')
+                .attr('transform', `translate(${chartWidth/2}, ${chartHeight + 40})`)
+                .style('text-anchor', 'middle')
+                .style('fill', '#fff')
+                .style('font-size', '14px')
+                .text('Likelihood');
+            
+            g.append('text')
+                .attr('transform', 'rotate(-90)')
+                .attr('y', -30)
+                .attr('x', -chartHeight/2)
+                .style('text-anchor', 'middle')
+                .style('fill', '#fff')
+                .style('font-size', '14px')
+                .text('Impact');
+            
+            // Plot threats
+            const threats = g.selectAll('.threat-point')
+                .data(allThreats)
+                .enter().append('g')
+                .attr('class', 'threat-point');
+            
+            threats.append('circle')
+                .attr('cx', d => xScale(d.likelihood))
+                .attr('cy', d => yScale(d.impact))
+                .attr('r', 8)
+                .attr('fill', d => getRiskColor((d.likelihood * d.impact / 25) * 100))
+                .attr('stroke', '#fff')
+                .attr('stroke-width', 2)
+                .style('cursor', 'pointer')
+                .on('mouseover', function(event, d) {
+                    const tooltip = g.append('g').attr('class', 'tooltip');
+                    const rect = tooltip.append('rect')
+                        .attr('fill', 'rgba(0,0,0,0.8)')
+                        .attr('stroke', '#333')
+                        .attr('rx', 4);
+                    
+                    const text = tooltip.append('text')
+                        .attr('fill', '#fff')
+                        .attr('font-size', '12px')
+                        .attr('x', 8)
+                        .attr('y', 16);
+                    
+                    text.append('tspan').text(d.name).attr('font-weight', 'bold');
+                    text.append('tspan').text(`Node: ${d.nodeName}`).attr('x', 8).attr('dy', 16);
+                    text.append('tspan').text(`Risk: ${Math.round((d.likelihood * d.impact / 25) * 100)}%`).attr('x', 8).attr('dy', 16);
+                    
+                    const bbox = text.node().getBBox();
+                    rect.attr('x', bbox.x - 4)
+                        .attr('y', bbox.y - 4)
+                        .attr('width', bbox.width + 8)
+                        .attr('height', bbox.height + 8);
+                    
+                    tooltip.attr('transform', `translate(${xScale(d.likelihood) + 15}, ${yScale(d.impact) - 20})`);
+                })
+                .on('mouseout', function() {
+                    g.select('.tooltip').remove();
+                });
+            
+            // Title
+            svg.append('text')
+                .attr('x', width/2)
+                .attr('y', 30)
+                .style('text-anchor', 'middle')
+                .style('fill', '#fff')
+                .style('font-size', '18px')
+                .style('font-weight', 'bold')
+                .text(`Risk Matrix - ${scenario.name}`);
+        }
+
+        // Attack Flow View
+        function drawAttackFlow(scenario) {
+            // Clear existing content
+            d3.select('#graph-container svg').remove();
+            
+            const container = document.getElementById('graph-container');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            
+            const svg = d3.select('#graph-container')
+                .append('svg')
+                .attr('width', width)
+                .attr('height', height);
+            
+            const margin = {top: 80, right: 50, bottom: 50, left: 50};
+            const flowWidth = width - margin.left - margin.right;
+            const flowHeight = height - margin.top - margin.bottom;
+            
+            const g = svg.append('g')
+                .attr('transform', `translate(${margin.left},${margin.top})`);
+            
+            // Create attack path based on critical links
+            const attackPath = [];
+            const processedNodes = new Set();
+            
+            // Start from customer layer
+            const startNode = scenario.nodes.find(n => n.layer === 'customer');
+            if (startNode) {
+                attackPath.push(startNode);
+                processedNodes.add(startNode.id);
+                
+                // Follow critical links
+                let currentNode = startNode;
+                while (currentNode) {
+                    const criticalLink = scenario.links.find(link => 
+                        link.source === currentNode.id && link.critical
+                    );
+                    
+                    if (criticalLink) {
+                        const nextNode = scenario.nodes.find(n => n.id === criticalLink.target);
+                        if (nextNode && !processedNodes.has(nextNode.id)) {
+                            attackPath.push(nextNode);
+                            processedNodes.add(nextNode.id);
+                            currentNode = nextNode;
+                        } else {
+                            break;
+                        }
+                    } else {
+                        // Find any link if no critical path
+                        const anyLink = scenario.links.find(link => 
+                            link.source === currentNode.id && !processedNodes.has(link.target)
+                        );
+                        
+                        if (anyLink) {
+                            const nextNode = scenario.nodes.find(n => n.id === anyLink.target);
+                            if (nextNode) {
+                                attackPath.push(nextNode);
+                                processedNodes.add(nextNode.id);
+                                currentNode = nextNode;
+                            } else {
+                                break;
+                            }
+                        } else {
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            if (attackPath.length === 0) {
+                // Fallback: use all nodes in order
+                attackPath.push(...scenario.nodes);
+            }
+            
+            // Position nodes along the flow
+            const stepWidth = flowWidth / Math.max(1, attackPath.length - 1);
+            const nodePositions = attackPath.map((node, i) => ({
+                ...node,
+                x: i * stepWidth,
+                y: flowHeight / 2,
+                step: i + 1
+            }));
+            
+            // Draw flow lines
+            for (let i = 0; i < nodePositions.length - 1; i++) {
+                const current = nodePositions[i];
+                const next = nodePositions[i + 1];
+                
+                g.append('line')
+                    .attr('x1', current.x + 40)
+                    .attr('y1', current.y)
+                    .attr('x2', next.x - 40)
+                    .attr('y2', next.y)
+                    .attr('stroke', '#ef4444')
+                    .attr('stroke-width', 4)
+                    .attr('stroke-opacity', 0.8)
+                    .attr('marker-end', 'url(#flow-arrow)');
+            }
+            
+            // Create arrow marker
+            svg.append('defs').append('marker')
+                .attr('id', 'flow-arrow')
+                .attr('viewBox', '0 -5 10 10')
+                .attr('refX', 8)
+                .attr('refY', 0)
+                .attr('markerWidth', 6)
+                .attr('markerHeight', 6)
+                .attr('orient', 'auto')
+                .append('path')
+                .attr('d', 'M0,-5L10,0L0,5')
+                .attr('fill', '#ef4444');
+            
+            // Draw nodes
+            const nodes = g.selectAll('.flow-node')
+                .data(nodePositions)
+                .enter().append('g')
+                .attr('class', 'flow-node')
+                .attr('transform', d => `translate(${d.x}, ${d.y})`);
+            
+            // Node circles
+            nodes.append('circle')
+                .attr('r', 35)
+                .attr('fill', d => layerColors[d.layer])
+                .attr('stroke', '#fff')
+                .attr('stroke-width', 3)
+                .style('cursor', 'pointer')
+                .on('click', showNodeDetails);
+            
+            // Step numbers
+            nodes.append('circle')
+                .attr('r', 15)
+                .attr('cy', -50)
+                .attr('fill', '#ef4444')
+                .attr('stroke', '#fff')
+                .attr('stroke-width', 2);
+            
+            nodes.append('text')
+                .attr('y', -45)
+                .attr('text-anchor', 'middle')
+                .attr('fill', '#fff')
+                .attr('font-size', '12px')
+                .attr('font-weight', 'bold')
+                .text(d => d.step);
+            
+            // Node labels
+            nodes.append('text')
+                .attr('y', 5)
+                .attr('text-anchor', 'middle')
+                .attr('fill', '#fff')
+                .attr('font-size', '12px')
+                .attr('font-weight', 'bold')
+                .text(d => d.name.length > 15 ? d.name.substring(0, 15) + '...' : d.name);
+            
+            // Layer labels
+            nodes.append('text')
+                .attr('y', 55)
+                .attr('text-anchor', 'middle')
+                .attr('fill', '#999')
+                .attr('font-size', '10px')
+                .text(d => d.layer.toUpperCase());
+            
+            // Risk scores
+            nodes.append('text')
+                .attr('y', -15)
+                .attr('text-anchor', 'middle')
+                .attr('fill', '#fff')
+                .attr('font-size', '10px')
+                .attr('font-weight', 'bold')
+                .text(d => d.riskScore ? d.riskScore.residual + '%' : '');
+            
+            // Title
+            svg.append('text')
+                .attr('x', width/2)
+                .attr('y', 30)
+                .style('text-anchor', 'middle')
+                .style('fill', '#fff')
+                .style('font-size', '18px')
+                .style('font-weight', 'bold')
+                .text(`Attack Flow - ${scenario.name}`);
+            
+            // Attack path description
+            svg.append('text')
+                .attr('x', width/2)
+                .attr('y', 55)
+                .style('text-anchor', 'middle')
+                .style('fill', '#999')
+                .style('font-size', '14px')
+                .text(`${attackPath.length} step attack progression through system layers`);
+        }
+
+        // Load scenario
+        function loadScenario(scenarioId) {
+            currentScenario = scenarioId;
+            const scenario = scenarios[scenarioId];
+            
+            // Update active scenario in navigation
+            document.querySelectorAll('.scenario-item').forEach(item => {
+                item.classList.toggle('active', item.dataset.scenario == scenarioId);
+            });
+            
+            // Update scenario info box
+            updateScenarioInfo(scenario);
+            
+            // Update stats
+            updateStats(scenario);
+            
+            // Draw the view based on current view type
+            switchView(currentView);
+        }
+
+        // Update scenario info box
+        function updateScenarioInfo(scenario) {
+            const infoBox = document.getElementById('scenarioInfo');
+            let threatList = '';
+            scenario.keyThreats.forEach(threat => {
+                threatList += `<li>${threat}</li>`;
+            });
+            
+            infoBox.innerHTML = `
+                <h3>${scenario.name}</h3>
+                <p>${scenario.description}</p>
+                <div class="threat-focus">
+                    <h4>Key Threats</h4>
+                    <ul>${threatList}</ul>
+                </div>
+            `;
+        }
+
+        // Update statistics
+        function updateStats(scenario) {
+            let totalThreats = 0;
+            let totalRisk = 0;
+            let criticalNodes = 0;
+            
+            scenario.nodes.forEach(node => {
+                if (node.threats) totalThreats += node.threats.length;
+                if (node.riskScore) {
+                    totalRisk += node.riskScore.residual;
+                    if (node.riskScore.residual >= 50) criticalNodes++;
+                }
+            });
+            
+            const avgRisk = scenario.nodes.length > 0 ? Math.round(totalRisk / scenario.nodes.length) : 0;
+            
+            document.getElementById('totalThreats').textContent = totalThreats;
+            document.getElementById('avgRisk').textContent = avgRisk + '%';
+            document.getElementById('criticalNodes').textContent = criticalNodes;
+        }
+
+        // Draw graph
+        function drawGraph(scenario) {
+            // Clear existing graph
+            d3.select('#graph-container svg').remove();
+            
+            const container = document.getElementById('graph-container');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            const svg = d3.select('#graph-container')
+                .append('svg')
+                .attr('width', width)
+                .attr('height', height);
+
+            // Create zoom behavior
+            const zoom = d3.zoom()
+                .scaleExtent([0.5, 3])
+                .on('zoom', (event) => {
+                    g.attr('transform', event.transform);
+                });
+
+            svg.call(zoom);
+
+            const g = svg.append('g');
+
+            // Create arrowhead markers
+            svg.append('defs').selectAll('marker')
+                .data(['normal', 'critical'])
+                .enter().append('marker')
+                .attr('id', d => `arrow-${d}`)
+                .attr('viewBox', '0 -5 10 10')
+                .attr('refX', 35)
+                .attr('refY', 0)
+                .attr('markerWidth', 6)
+                .attr('markerHeight', 6)
+                .attr('orient', 'auto')
+                .append('path')
+                .attr('d', 'M0,-5L10,0L0,5')
+                .attr('fill', d => d === 'critical' ? '#ef4444' : '#9ca3af');
+
+            // Prepare links
+            const links = scenario.links.map(link => ({
+                source: scenario.nodes.find(n => n.id === link.source),
+                target: scenario.nodes.find(n => n.id === link.target),
+                type: link.type,
+                critical: link.critical || false
+            }));
+
+            // Create force simulation
+            const simulation = d3.forceSimulation(scenario.nodes)
+                .force('link', d3.forceLink(links).id(d => d.id).distance(150))
+                .force('charge', d3.forceManyBody().strength(-400))
+                .force('center', d3.forceCenter(width / 2, height / 2))
+                .force('collision', d3.forceCollide().radius(60));
+
+            // Add links
+            const link = g.append('g')
+                .selectAll('line')
+                .data(links)
+                .enter().append('line')
+                .attr('class', d => d.critical ? 'link critical-path' : 'link')
+                .attr('marker-end', d => d.critical ? 'url(#arrow-critical)' : 'url(#arrow-normal)');
+
+            // Add link labels
+            const linkLabel = g.append('g')
+                .selectAll('text')
+                .data(links)
+                .enter().append('text')
+                .attr('class', 'link-label')
+                .attr('font-size', '10px')
+                .attr('fill', '#666')
+                .attr('text-anchor', 'middle')
+                .text(d => d.type);
+
+            // Add nodes
+            const node = g.append('g')
+                .selectAll('g')
+                .data(scenario.nodes)
+                .enter().append('g')
+                .attr('class', 'node')
+                .call(d3.drag()
+                    .on('start', dragstarted)
+                    .on('drag', dragged)
+                    .on('end', dragended));
+
+            // Add circles to nodes
+            node.append('circle')
+                .attr('class', 'node-circle')
+                .attr('r', d => {
+                    const threats = d.threats ? d.threats.length : 0;
+                    return 25 + threats * 3;
+                })
+                .attr('fill', d => layerColors[d.layer])
+                .attr('stroke', d => layerColors[d.layer])
+                .on('click', showNodeDetails);
+
+            // Add risk indicators
+            node.append('text')
+                .attr('class', 'risk-indicator')
+                .attr('dy', 0)
+                .text(d => d.riskScore ? d.riskScore.residual + '%' : '');
+
+            // Add node labels
+            node.append('text')
+                .attr('class', 'node-label')
+                .attr('dy', 45)
+                .text(d => d.name.length > 20 ? d.name.substring(0, 20) + '...' : d.name);
+
+            // Add layer labels
+            node.append('text')
+                .attr('class', 'layer-label')
+                .attr('dy', 60)
+                .text(d => d.layer.toUpperCase());
+
+            // Update positions on tick
+            simulation.on('tick', () => {
+                link
+                    .attr('x1', d => d.source.x)
+                    .attr('y1', d => d.source.y)
+                    .attr('x2', d => d.target.x)
+                    .attr('y2', d => d.target.y);
+
+                linkLabel
+                    .attr('x', d => (d.source.x + d.target.x) / 2)
+                    .attr('y', d => (d.source.y + d.target.y) / 2);
+
+                node.attr('transform', d => `translate(${d.x},${d.y})`);
+            });
+
+            // Drag functions
+            function dragstarted(event, d) {
+                if (!event.active) simulation.alphaTarget(0.3).restart();
+                d.fx = d.x;
+                d.fy = d.y;
+            }
+
+            function dragged(event, d) {
+                d.fx = event.x;
+                d.fy = event.y;
+            }
+
+            function dragended(event, d) {
+                if (!event.active) simulation.alphaTarget(0);
+                d.fx = null;
+                d.fy = null;
+            }
+        }
+
+        // Show node details
+        function showNodeDetails(event, d) {
+            const panel = document.getElementById('detailsPanel');
+            const nodeInfo = document.getElementById('nodeInfo');
+            const threatsList = document.getElementById('threatsList');
+            const controlsList = document.getElementById('controlsList');
+
+            // Node information
+            nodeInfo.innerHTML = `
+                <h2 style="margin-bottom: 12px;">${d.name}</h2>
+                <div style="font-size: 14px; color: #666; margin-bottom: 12px;">Layer: ${d.layer}</div>
+                ${d.riskScore ? `
+                <div class="risk-scores" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                    <div class="risk-score-item" style="background: #111; padding: 12px; border-radius: 8px; text-align: center;">
+                        <div class="risk-score-label" style="font-size: 12px; color: #666; margin-bottom: 4px;">Inherent Risk</div>
+                        <div class="risk-score-value" style="font-size: 24px; font-weight: 700; color: ${getRiskColor(d.riskScore.inherent)};">${d.riskScore.inherent}%</div>
+                    </div>
+                    <div class="risk-score-item" style="background: #111; padding: 12px; border-radius: 8px; text-align: center;">
+                        <div class="risk-score-label" style="font-size: 12px; color: #666; margin-bottom: 4px;">Residual Risk</div>
+                        <div class="risk-score-value" style="font-size: 24px; font-weight: 700; color: ${getRiskColor(d.riskScore.residual)};">${d.riskScore.residual}%</div>
+                    </div>
+                </div>
+                ` : ''}
+                <div class="node-meta">
+                    <span class="meta-item" style="background: ${layerColors[d.layer]}20; color: ${layerColors[d.layer]};">${d.layer.toUpperCase()}</span>
+                    ${d.threats ? `<span class="meta-item">Threats: ${d.threats.length}</span>` : ''}
+                    ${d.controls ? `<span class="meta-item">Controls: ${d.controls.length}</span>` : ''}
+                </div>
+            `;
+
+            // Threats
+            if (d.threats && d.threats.length > 0) {
+                threatsList.innerHTML = d.threats.map(threat => `
+                    <div class="threat-card">
+                        <div class="threat-id" style="font-size: 11px; color: #666; margin-bottom: 8px; font-family: monospace;">${threat.id}</div>
+                        <div class="threat-header">
+                            <span class="threat-name">${threat.name}</span>
+                            <span class="threat-category ${threat.category}">${threat.category.toUpperCase()}</span>
+                        </div>
+                        <p class="threat-description">${threat.description}</p>
+                        <div class="risk-scores" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                            <div class="risk-score-item" style="background: #111; padding: 12px; border-radius: 8px; text-align: center;">
+                                <div class="risk-score-label" style="font-size: 12px; color: #666; margin-bottom: 4px;">Likelihood</div>
+                                <div class="risk-score-value" style="font-size: 24px; font-weight: 700; color: ${getLikelihoodColor(threat.likelihood)};">${threat.likelihood}/5</div>
+                            </div>
+                            <div class="risk-score-item" style="background: #111; padding: 12px; border-radius: 8px; text-align: center;">
+                                <div class="risk-score-label" style="font-size: 12px; color: #666; margin-bottom: 4px;">Impact</div>
+                                <div class="risk-score-value" style="font-size: 24px; font-weight: 700; color: ${getImpactColor(threat.impact)};">${threat.impact}/5</div>
+                            </div>
+                        </div>
+                        ${threat.cve ? `<div style="margin-top: 8px; font-size: 12px; color: #f97316;">Reference: ${threat.cve}</div>` : ''}
+                    </div>
+                `).join('');
+            } else {
+                threatsList.innerHTML = '<p style="color: #666;">No threats identified for this node.</p>';
+            }
+
+            // Controls
+            if (d.controls && d.controls.length > 0) {
+                controlsList.innerHTML = d.controls.map(control => `
+                    <div class="control-item" style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 8px; padding: 12px; margin-bottom: 8px;">
+                        <div class="control-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                            <div>
+                                <span class="control-name" style="font-weight: 500; font-size: 14px;">${control.name}</span>
+                                <span class="control-type" style="font-size: 11px; padding: 2px 8px; border-radius: 12px; background: rgba(99, 102, 241, 0.2); color: #8b5cf6; margin-left: 8px;">${control.type || 'control'}</span>
+                            </div>
+                            <span class="effectiveness" style="font-size: 12px; color: #6366f1;">${control.effectiveness}% effective</span>
+                        </div>
+                        ${control.mitigates ? `<div class="mitigates" style="font-size: 11px; color: #666; margin-top: 4px;">Mitigates: ${control.mitigates.join(', ')}</div>` : ''}
+                    </div>
+                `).join('');
+            } else {
+                controlsList.innerHTML = '<p style="color: #666;">No controls defined for this node.</p>';
+            }
+
+            panel.classList.add('active');
+        }
+
+        // Close details panel
+        function closeDetails() {
+            document.getElementById('detailsPanel').classList.remove('active');
+        }
+
+        // Scenario navigation
+        document.querySelectorAll('.scenario-item').forEach(item => {
+            item.addEventListener('click', function() {
+                const scenarioId = parseInt(this.dataset.scenario);
+                loadScenario(scenarioId);
+            });
+        });
+
+        // View toggle buttons
+        document.querySelectorAll('.view-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const viewType = this.dataset.view;
+                switchView(viewType);
+            });
+        });
+
+        // Initialize with first scenario
+        loadScenario(1);
+    </script>
+</body>
+</html>
