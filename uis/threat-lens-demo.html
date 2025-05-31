@@ -386,8 +386,8 @@
         
         <div id="spacing-control">
             <div class="control-group">
-                <div class="control-label">Layer Spacing <span id="spacing-value" style="font-weight: normal; color: #94a3b8;">(150)</span></div>
-                <input type="range" id="spacing-slider" min="30" max="150" value="150" class="opacity-slider">
+                <div class="control-label">Layer Spacing <span id="spacing-value" style="font-weight: normal; color: #94a3b8;">(200)</span></div>
+                <input type="range" id="spacing-slider" min="30" max="350" value="200" class="opacity-slider">
             </div>
         </div>
 
@@ -434,6 +434,10 @@
         <button class="scenario-button" onclick="runScenario('cve')">
             <strong>CVE Impact Analysis</strong><br>
             <small>Trace CVE-2023-12345 through layers</small>
+        </button>
+        <button class="scenario-button" onclick="runScenario('sql')">
+            <strong>SQL Injection Attack</strong><br>
+            <small>Exploit in gateway.charge() method</small>
         </button>
         <button class="scenario-button" onclick="runScenario('breach')">
             <strong>Runtime Breach</strong><br>
@@ -514,7 +518,8 @@
                 <div>🖱️ <strong>Double-click:</strong> Select node</div>
                 <div>⚲ <strong>Mouse wheel:</strong> Zoom in/out</div>
                 <div>🔘 <strong>Up/Down buttons:</strong> Move view up/down</div>
-                <div>⌨️ <strong>Arrow keys:</strong> Rotate view</div>
+                <div>⌨️ <strong>Arrow Up/Down:</strong> Move view up/down</div>
+                <div>⌨️ <strong>Arrow Left/Right:</strong> Rotate view</div>
                 <div>⌨️ <strong>T:</strong> Top view | <strong>F:</strong> Front view | <strong>S:</strong> Side view</div>
                 <div>⌨️ <strong>+/-:</strong> Zoom in/out</div>
             </div>
@@ -535,6 +540,7 @@
 
         // Layer definitions
         const layerConfig = [
+            { id: 'customer', name: 'Customer', color: 0x6366f1, height: 10 },
             { id: 'business', name: 'Business Functions', color: 0x1e3a8a, height: 9 },
             { id: 'application', name: 'Applications', color: 0x6b21a8, height: 8 },
             { id: 'component', name: 'Components', color: 0xbe185d, height: 7 },
@@ -549,12 +555,17 @@
 
         // Sample data structure
         const graphData = {
+            customer: {
+                nodes: [
+                    { id: 'cust1', name: 'End Customer', x: 0, z: 0, risk: 'critical' }
+                ]
+            },
             business: {
                 nodes: [
                     { id: 'bf1', name: 'Payment Processing', x: 0, z: 0, risk: 'high' },
                     { id: 'bf2', name: 'User Authentication', x: 400, z: 0, risk: 'critical' },
-                    { id: 'bf3', name: 'Order Fulfillment', x: -400, z: 0, risk: 'medium' },
-                    { id: 'bf4', name: 'Customer Data', x: 0, z: 400, risk: 'high' }
+                    { id: 'bf3', name: 'Order Fulfillment', x: -400, z: 0, risk: 'medium', parent: 'cust1' },
+                    { id: 'bf4', name: 'Customer Data', x: 0, z: 400, risk: 'high', parent: 'cust1' }
                 ]
             },
             application: {
@@ -600,22 +611,22 @@
             },
             method: {
                 nodes: [
-                    { id: 'mth1', name: 'process_payment()', x: -60, z: -100, parent: 'cls1' },
-                    { id: 'mth2', name: 'validate_card_details()', x: 60, z: -100, parent: 'cls2' },
-                    { id: 'mth3', name: 'check_fraud_score()', x: 0, z: 100, parent: 'cls3' },
-                    { id: 'mth4', name: 'encrypt_sensitive_data()', x: -100, z: 0, parent: 'cls1' },
-                    { id: 'mth5', name: 'call_payment_gateway()', x: 100, z: 0, parent: 'cls1' },
-                    { id: 'mth6', name: 'generate_token()', x: 360, z: -160, parent: 'cls6' }
+                    { id: 'mth1', name: 'process_payment()', x: -120, z: -200, parent: 'cls1' },
+                    { id: 'mth2', name: 'validate_card_details()', x: 120, z: -200, parent: 'cls2' },
+                    { id: 'mth3', name: 'check_fraud_score()', x: 0, z: 200, parent: 'cls3' },
+                    { id: 'mth4', name: 'encrypt_sensitive_data()', x: -200, z: 0, parent: 'cls1' },
+                    { id: 'mth5', name: 'call_payment_gateway()', x: 200, z: 0, parent: 'cls1' },
+                    { id: 'mth6', name: 'generate_token()', x: 360, z: -320, parent: 'cls6' }
                 ]
             },
             code: {
                 nodes: [
-                    { id: 'code1', name: 'Line 142: tokenize()', x: -60, z: -140, parent: 'mth1', line: 142 },
-                    { id: 'code2', name: 'Line 145: calculate_risk()', x: 0, z: -140, parent: 'mth1', line: 145 },
-                    { id: 'code3', name: 'Line 148: fraud_check', x: 60, z: -140, parent: 'mth1', line: 148 },
-                    { id: 'code4', name: 'Line 152: encrypt_data()', x: -100, z: -40, parent: 'mth4', line: 152 },
-                    { id: 'code5', name: 'Line 156: gateway.charge()', x: 100, z: -40, parent: 'mth5', line: 156 },
-                    { id: 'code6', name: 'Line 160: audit_log()', x: 0, z: 40, parent: 'mth1', line: 160 }
+                    { id: 'code1', name: 'Line 142: tokenize()', x: -120, z: -280, parent: 'mth1', line: 142 },
+                    { id: 'code2', name: 'Line 145: calculate_risk()', x: 0, z: -280, parent: 'mth1', line: 145 },
+                    { id: 'code3', name: 'Line 148: fraud_check', x: 120, z: -280, parent: 'mth1', line: 148 },
+                    { id: 'code4', name: 'Line 152: encrypt_data()', x: -200, z: -80, parent: 'mth4', line: 152 },
+                    { id: 'code5', name: 'Line 156: gateway.charge()', x: 200, z: -80, parent: 'mth5', line: 156 },
+                    { id: 'code6', name: 'Line 160: audit_log()', x: 0, z: 80, parent: 'mth1', line: 160 }
                 ]
             },
             environment: {
@@ -711,7 +722,7 @@
             createLayerToggles();
             
             // Initialize camera center based on default spacing
-            const defaultSpacing = 150;
+            const defaultSpacing = 200;
             window.cameraLookAtY = 450;  // Set to a lower value to better frame the visualization
 
             // Hide loading
@@ -735,8 +746,10 @@
                 scene.add(layers[config.id].group);
             });
             
-            // Show only the business layer by default
+            // Show customer, business and applications layers by default
             setTimeout(() => {
+                document.getElementById('toggle-customer').checked = true;
+                toggleLayer('customer');
                 document.getElementById('toggle-business').checked = true;
                 toggleLayer('business');
                 // Also show applications layer by default
@@ -798,9 +811,9 @@
             
             if (!data || !data.nodes) return;
             
-            // Get current spacing from slider, default to 50
+            // Get current spacing from slider, default to 200
             const spacingSlider = document.getElementById('spacing-slider');
-            const spacing = spacingSlider ? parseFloat(spacingSlider.value) : 150;
+            const spacing = spacingSlider ? parseFloat(spacingSlider.value) : 200;
             const layerY = layer.config.height * spacing;
             
             data.nodes.forEach(nodeData => {
@@ -973,6 +986,11 @@
             
             // Create intra-layer connections based on layer type
             switch(layerId) {
+                case 'customer':
+                    // Customer layer - for now just one node, but ready for expansion
+                    // No intra-layer connections needed yet
+                    break;
+                    
                 case 'business':
                     // Business functions interact with each other
                     const paymentBF = currentLayer.nodes.find(n => n.userData.id === 'bf1');
@@ -1031,6 +1049,11 @@
                     
                     // Stripe package depends on pydantic for validation
                     if (stripePkg && pydanticPkg) createConnection(stripePkg, pydanticPkg, 'dependency');
+                    
+                    // Ensure pkg7 (redis-py) has connections
+                    const redisPkg = currentLayer.nodes.find(n => n.userData.id === 'pkg7');
+                    if (redisPkg && requestsPkg) createConnection(redisPkg, requestsPkg, 'dependency');
+                    if (redisPkg && pydanticPkg) createConnection(redisPkg, pydanticPkg, 'dependency');
                     break;
                     
                 case 'class':
@@ -1045,6 +1068,11 @@
                     if (processor && fraudClass) createConnection(processor, fraudClass, 'dependency');
                     if (processor && request) createConnection(processor, request, 'data-flow');
                     if (processor && response) createConnection(processor, response, 'data-flow');
+                    
+                    // Ensure cls6 (TokenManager) has connections
+                    const tokenManagerClass = currentLayer.nodes.find(n => n.userData.id === 'cls6');
+                    if (tokenManagerClass && processor) createConnection(tokenManagerClass, processor, 'dependency');
+                    if (tokenManagerClass && response) createConnection(tokenManagerClass, response, 'data-flow');
                     break;
                     
                 case 'method':
@@ -1061,6 +1089,40 @@
                         if (encryptData) createConnection(processPayment, encryptData, 'data-flow');
                         if (callGateway) createConnection(processPayment, callGateway, 'data-flow');
                     }
+                    // Ensure mth6 has connections
+                    const generateToken = currentLayer.nodes.find(n => n.userData.id === 'mth6');
+                    if (generateToken && encryptData) createConnection(generateToken, encryptData, 'dependency');
+                    break;
+                    
+                case 'code':
+                    // Code execution flow
+                    const tokenize = currentLayer.nodes.find(n => n.userData.id === 'code1');
+                    const calcRisk = currentLayer.nodes.find(n => n.userData.id === 'code2');
+                    const fraudCheck = currentLayer.nodes.find(n => n.userData.id === 'code3');
+                    const encrypt = currentLayer.nodes.find(n => n.userData.id === 'code4');
+                    const gatewayCharge = currentLayer.nodes.find(n => n.userData.id === 'code5');
+                    const audit = currentLayer.nodes.find(n => n.userData.id === 'code6');
+                    
+                    // Sequential execution flow
+                    if (tokenize && calcRisk) createConnection(tokenize, calcRisk, 'data-flow');
+                    if (calcRisk && fraudCheck) createConnection(calcRisk, fraudCheck, 'data-flow');
+                    if (fraudCheck && encrypt) createConnection(fraudCheck, encrypt, 'data-flow');
+                    if (encrypt && gatewayCharge) createConnection(encrypt, gatewayCharge, 'data-flow');
+                    if (gatewayCharge && audit) createConnection(gatewayCharge, audit, 'data-flow');
+                    break;
+                    
+                case 'environment':
+                    // Environment dependencies
+                    const python = currentLayer.nodes.find(n => n.userData.id === 'env1');
+                    const nodejs = currentLayer.nodes.find(n => n.userData.id === 'env2');
+                    const java = currentLayer.nodes.find(n => n.userData.id === 'env3');
+                    const golang = currentLayer.nodes.find(n => n.userData.id === 'env4');
+                    
+                    // Common dependencies and interactions
+                    if (python && nodejs) createConnection(python, nodejs, 'dependency');
+                    if (java && golang) createConnection(java, golang, 'dependency');
+                    if (nodejs && java) createConnection(nodejs, java, 'data-flow');
+                    if (python && golang) createConnection(python, golang, 'data-flow');
                     break;
                     
                 case 'runtime':
@@ -1073,6 +1135,10 @@
                     // Lambda invokes other services
                     if (lambda && k8sPod) createConnection(lambda, k8sPod, 'data-flow');
                     if (container && cloudRun) createConnection(container, cloudRun, 'data-flow');
+                    
+                    // Additional connections to ensure all nodes are connected
+                    if (k8sPod && container) createConnection(k8sPod, container, 'dependency');
+                    if (cloudRun && lambda) createConnection(cloudRun, lambda, 'data-flow');
                     break;
                     
                 case 'compute':
@@ -1080,9 +1146,14 @@
                     const usEast = currentLayer.nodes.find(n => n.userData.id === 'cmp1');
                     const euWest = currentLayer.nodes.find(n => n.userData.id === 'cmp2');
                     const gke = currentLayer.nodes.find(n => n.userData.id === 'cmp3');
+                    const azure = currentLayer.nodes.find(n => n.userData.id === 'cmp4');
                     
                     // Cross-region replication
                     if (usEast && euWest) createConnection(usEast, euWest, 'dependency');
+                    // Multi-cloud connections
+                    if (gke && azure) createConnection(gke, azure, 'dependency');
+                    if (euWest && gke) createConnection(euWest, gke, 'data-flow');
+                    if (usEast && azure) createConnection(usEast, azure, 'data-flow');
                     break;
             }
         }
@@ -1104,6 +1175,18 @@
                                 if (pythonEnv) createConnection(codeNode, pythonEnv, 'dependency');
                             }
                         });
+                        
+                        // Additional connections for Java and Go environments
+                        const javaEnv = layers.environment.nodes.find(n => n.userData.id === 'env3');
+                        const goEnv = layers.environment.nodes.find(n => n.userData.id === 'env4');
+                        
+                        // Connect some code to other environments
+                        if (layers.code.nodes.length > 0) {
+                            const auditCode = layers.code.nodes.find(n => n.userData.id === 'code6');
+                            const gatewayCode = layers.code.nodes.find(n => n.userData.id === 'code5');
+                            if (auditCode && javaEnv) createConnection(auditCode, javaEnv, 'dependency');
+                            if (gatewayCode && goEnv) createConnection(gatewayCode, goEnv, 'dependency');
+                        }
                     }
                     break;
                     
@@ -1117,6 +1200,15 @@
                         
                         if (pythonEnv && lambda) createConnection(pythonEnv, lambda, 'data-flow');
                         if (nodeEnv && k8s) createConnection(nodeEnv, k8s, 'data-flow');
+                        
+                        // Connect Java and Go environments to runtimes
+                        const javaEnv = layers.environment.nodes.find(n => n.userData.id === 'env3');
+                        const goEnv = layers.environment.nodes.find(n => n.userData.id === 'env4');
+                        const container = layers.runtime.nodes.find(n => n.userData.id === 'rt3');
+                        const cloudRun = layers.runtime.nodes.find(n => n.userData.id === 'rt4');
+                        
+                        if (javaEnv && container) createConnection(javaEnv, container, 'data-flow');
+                        if (goEnv && cloudRun) createConnection(goEnv, cloudRun, 'data-flow');
                     }
                     break;
                     
@@ -1133,6 +1225,11 @@
                         if (lambda && aws1) createConnection(lambda, aws1, 'dependency');
                         if (k8s && gke) createConnection(k8s, gke, 'dependency');
                         if (container && aws2) createConnection(container, aws2, 'dependency');
+                        
+                        // Connect Azure to runtime
+                        const azure = layers.compute.nodes.find(n => n.userData.id === 'cmp4');
+                        const cloudRun = layers.runtime.nodes.find(n => n.userData.id === 'rt4');
+                        if (cloudRun && azure) createConnection(cloudRun, azure, 'dependency');
                     }
                     break;
             }
@@ -1319,7 +1416,7 @@
             let targetZoom = 1;
             
             // Initialize window variable for camera vertical offset
-            window.cameraVerticalOffset = 400;  // Changed from 0 to 400 for better initial view
+            window.cameraVerticalOffset = 900;  // Start higher for better initial view of all layers
             
             const minZoom = 0.5;
             const maxZoom = 3;
@@ -1428,10 +1525,12 @@
             document.addEventListener('keydown', (event) => {
                 switch(event.key) {
                     case 'ArrowUp':
-                        targetRotationY = Math.min(Math.PI/2, targetRotationY + 0.1);
+                        // Move camera up instead of rotating
+                        moveCamera('up');
                         break;
                     case 'ArrowDown':
-                        targetRotationY = Math.max(-Math.PI/2, targetRotationY - 0.1);
+                        // Move camera down instead of rotating
+                        moveCamera('down');
                         break;
                     case 'ArrowLeft':
                         targetRotationX -= 0.1;
@@ -1498,10 +1597,10 @@
                 Object.values(layers).flatMap(layer => layer.nodes)
             );
             
-            // Reset previous highlights
+            // Reset previous highlights (but preserve threat-highlighted nodes)
             Object.values(layers).forEach(layer => {
                 layer.nodes.forEach(node => {
-                    if (node !== selectedObject) {
+                    if (node !== selectedObject && !node.userData.isThreatHighlighted) {
                         node.material.emissive = node.userData.originalColor;
                         node.material.emissiveIntensity = 0.3;
                     }
@@ -1511,8 +1610,10 @@
             // Highlight hovered node and update cursor
             if (intersects.length > 0) {
                 const object = intersects[0].object;
-                object.material.emissive = new THREE.Color(0xffffff);
-                object.material.emissiveIntensity = 0.5;
+                if (!object.userData.isThreatHighlighted) {
+                    object.material.emissive = new THREE.Color(0xffffff);
+                    object.material.emissiveIntensity = 0.5;
+                }
                 // Show different cursor to indicate double-click capability
                 document.body.style.cursor = 'pointer';
             } else {
@@ -1590,6 +1691,9 @@
                 case 'cve':
                     runCVEScenario();
                     break;
+                case 'sql':
+                    runSQLInjectionScenario();
+                    break;
                 case 'breach':
                     runBreachScenario();
                     break;
@@ -1604,96 +1708,223 @@
 
         // CVE Impact Analysis scenario
         function runCVEScenario() {
-            clearAllLayers();
-            
-            // Show layers in sequence
-            setTimeout(() => {
-                document.getElementById('toggle-package').checked = true;
-                toggleLayer('package');
-            }, 500);
-            
-            setTimeout(() => {
-                // Find and select vulnerable package
-                const vulnNode = layers.package.nodes.find(n => n.userData.vulnerable);
-                if (vulnNode) selectNode(vulnNode);
-            }, 1500);
-            
-            setTimeout(() => {
-                document.getElementById('toggle-component').checked = true;
-                toggleLayer('component');
-            }, 2500);
-            
-            setTimeout(() => {
-                document.getElementById('toggle-application').checked = true;
-                toggleLayer('application');
-            }, 3500);
-            
-            setTimeout(() => {
-                document.getElementById('toggle-business').checked = true;
-                toggleLayer('business');
+            // Find and color the vulnerable package and its impact chain
+            const vulnNode = layers.package.nodes.find(n => n.userData.vulnerable);
+            if (vulnNode) {
+                selectNode(vulnNode);
+                createThreatPaths(vulnNode);
+            }
+        }
+        
+        // SQL Injection scenario
+        function runSQLInjectionScenario() {
+            // Find the vulnerable code line
+            const sqlInjectionNode = layers.code.nodes.find(n => n.userData.id === 'code5');
+            if (sqlInjectionNode) {
+                selectNode(sqlInjectionNode);
                 
-                // Create threat paths
-                const vulnNode = layers.package.nodes.find(n => n.userData.vulnerable);
-                if (vulnNode) {
-                    createThreatPaths(vulnNode);
+                // Add special message to the selected node info
+                const details = document.getElementById('node-info');
+                details.innerHTML += '<div class="info-item" style="color: #dc2626; font-weight: bold;">⚠️ SQL INJECTION DETECTED: Unsanitized user input in payment charge query!</div>';
+                
+                // Propagate the threat upwards
+                createThreatPaths(sqlInjectionNode);
+            } else {
+                // If code layer is not visible, try to show it and then run the scenario
+                if (!layers.code.visible) {
+                    document.getElementById('toggle-code').checked = true;
+                    toggleLayer('code');
+                    
+                    // Wait for the layer to be created, then run the scenario
+                    setTimeout(() => {
+                        runSQLInjectionScenario();
+                    }, 1000);
+                } else {
+                    alert('Please enable the Source Code layer to see the SQL injection attack');
                 }
-            }, 4500);
+            }
         }
 
-        // Create red threat propagation paths
+        // Create threat propagation paths
         function createThreatPaths(sourceNode) {
-            // Find affected nodes up the chain
-            const component = layers.component.nodes.find(n => n.userData.id === 'comp1');
-            const app = layers.application.nodes.find(n => n.userData.id === 'app1');
-            const business = layers.business.nodes.find(n => n.userData.id === 'bf1');
+            // Set to track all affected nodes
+            const affectedNodes = new Set();
+            affectedNodes.add(sourceNode);
             
-            if (component) createConnection(sourceNode, component, 'threat');
-            if (app && component) createConnection(component, app, 'threat');
-            if (business && app) createConnection(app, business, 'threat');
+            // Turn the source node pink
+            if (sourceNode.material) {
+                sourceNode.material.color = new THREE.Color(0xff1493);
+                sourceNode.material.emissive = new THREE.Color(0xff1493);
+                sourceNode.material.emissiveIntensity = 0.8;
+                sourceNode.userData.isThreatHighlighted = true;
+            }
+            
+            // Function to recursively trace upward paths
+            function traceUpstream(node) {
+                // Check parent-child relationships
+                if (node.userData.parent) {
+                    // Find the parent node
+                    Object.values(layers).forEach(layer => {
+                        layer.nodes.forEach(parentNode => {
+                            if (parentNode.userData.id === node.userData.parent && !affectedNodes.has(parentNode)) {
+                                affectedNodes.add(parentNode);
+                                
+                                // Color the parent node
+                                parentNode.material.color = new THREE.Color(0xff1493);
+                                parentNode.material.emissive = new THREE.Color(0xff1493);
+                                parentNode.material.emissiveIntensity = 0.8;
+                                parentNode.userData.isThreatHighlighted = true;
+                                
+                                // Color the connection to parent
+                                colorExistingConnection(node, parentNode);
+                                
+                                // Continue tracing upstream
+                                traceUpstream(parentNode);
+                            }
+                        });
+                    });
+                }
+                
+                // Find all connections where this node is the END
+                connections.forEach(connection => {
+                    if (connection.userData.isCylinder && connection.userData.end === node) {
+                        const upstreamNode = connection.userData.start;
+                        
+                        if (!affectedNodes.has(upstreamNode)) {
+                            affectedNodes.add(upstreamNode);
+                            
+                            // Color the upstream node pink
+                            if (upstreamNode && upstreamNode.material) {
+                                upstreamNode.material.color = new THREE.Color(0xff1493);
+                                upstreamNode.material.emissive = new THREE.Color(0xff1493);
+                                upstreamNode.material.emissiveIntensity = 0.8;
+                                upstreamNode.userData.isThreatHighlighted = true;
+                            }
+                            
+                            // Color the connection
+                            colorExistingConnection(upstreamNode, node);
+                            
+                            // Recursively trace further upstream
+                            traceUpstream(upstreamNode);
+                        }
+                    }
+                });
+            }
+            
+            // Start tracing from the source node
+            traceUpstream(sourceNode);
             
             // Update threat level
             document.getElementById('threat-level').innerHTML = 
                 'Critical <span class="threat-indicator threat-critical"></span>';
+        }
+        
+        // Helper function to color existing connections
+        function colorExistingConnection(startNode, endNode) {
+            connections.forEach(connection => {
+                if (connection.userData.isCylinder) {
+                    // Check if this connection goes between our nodes (in either direction)
+                    if ((connection.userData.start === startNode && connection.userData.end === endNode) ||
+                        (connection.userData.start === endNode && connection.userData.end === startNode)) {
+                        // Color the connection pink
+                        connection.material.color = new THREE.Color(0xff1493);
+                        connection.material.emissive = new THREE.Color(0xff1493);
+                        connection.material.emissiveIntensity = 0.6;
+                        connection.material.opacity = 1;
+                        connection.userData.isThreatHighlighted = true;
+                        
+                        // Store original color for restoration
+                        if (!connection.userData.originalColor) {
+                            connection.userData.originalColor = new THREE.Color(connection.userData.type === 'parent' ? 0x3b82f6 : 
+                                                                             connection.userData.type === 'data-flow' ? 0x10b981 : 
+                                                                             connection.userData.type === 'dependency' ? 0xf97316 : 
+                                                                             connection.userData.type === 'authenticates' ? 0x8b5cf6 : 0x3b82f6);
+                        }
+                    }
+                } else if (connection.userData.isArrow && connection.userData.connection) {
+                    // Also color the arrow if its cylinder is being colored
+                    const cylinder = connection.userData.connection;
+                    if ((cylinder.userData.start === startNode && cylinder.userData.end === endNode) ||
+                        (cylinder.userData.start === endNode && cylinder.userData.end === startNode)) {
+                        connection.material.color = new THREE.Color(0xff1493);
+                        connection.material.emissive = new THREE.Color(0xff1493);
+                        connection.material.emissiveIntensity = 0.6;
+                        connection.material.opacity = 1;
+                        connection.userData.isThreatHighlighted = true;
+                    }
+                }
+            });
         }
 
         // Progressive build scenario
         function runProgressiveBuild() {
             clearAllLayers();
             
-            // Step 1: Start with business layer showing internal connections
+            // Step 1: Start with customer layer
+            setTimeout(() => {
+                document.getElementById(`toggle-customer`).checked = true;
+                toggleLayer('customer');
+            }, 500);
+            
+            // Step 2: Add business layer showing internal connections
             setTimeout(() => {
                 document.getElementById(`toggle-business`).checked = true;
                 toggleLayer('business');
-            }, 500);
+            }, 2000);
             
-            // Step 2: Add application layer showing service mesh
+            // Step 3: Add application layer showing service mesh
             setTimeout(() => {
                 document.getElementById(`toggle-application`).checked = true;
                 toggleLayer('application');
-            }, 2000);
+            }, 3500);
             
-            // Step 3: Add component layer showing modular architecture
+            // Step 4: Add component layer showing modular architecture
             setTimeout(() => {
                 document.getElementById(`toggle-component`).checked = true;
                 toggleLayer('component');
-            }, 3500);
+            }, 5000);
             
-            // Step 4: Add package layer showing dependency graph
+            // Step 5: Add package layer showing dependency graph
             setTimeout(() => {
                 document.getElementById(`toggle-package`).checked = true;
                 toggleLayer('package');
-            }, 5000);
+            }, 6500);
             
-            // Step 5: Add runtime and compute showing infrastructure
+            // Step 6: Add class layer showing object hierarchy
+            setTimeout(() => {
+                document.getElementById(`toggle-class`).checked = true;
+                toggleLayer('class');
+            }, 8000);
+            
+            // Step 7: Add method layer showing function calls
+            setTimeout(() => {
+                document.getElementById(`toggle-method`).checked = true;
+                toggleLayer('method');
+            }, 9500);
+            
+            // Step 8: Add source code layer showing implementation
+            setTimeout(() => {
+                document.getElementById(`toggle-code`).checked = true;
+                toggleLayer('code');
+            }, 11000);
+            
+            // Step 9: Add environment layer showing platforms
+            setTimeout(() => {
+                document.getElementById(`toggle-environment`).checked = true;
+                toggleLayer('environment');
+            }, 12500);
+            
+            // Step 10: Add runtime layer showing execution context
             setTimeout(() => {
                 document.getElementById(`toggle-runtime`).checked = true;
                 toggleLayer('runtime');
-            }, 6500);
+            }, 14000);
             
+            // Step 11: Add compute layer showing infrastructure
             setTimeout(() => {
                 document.getElementById(`toggle-compute`).checked = true;
                 toggleLayer('compute');
-            }, 8000);
+            }, 15500);
         }
 
         // Preset views
@@ -1723,15 +1954,38 @@
                 hideLayer(config.id);
             });
             
-            // Clear threat connections
-            connections = connections.filter(conn => {
-                if (conn.userData.type === 'threat' || conn.userData.isArrow) {
-                    scene.remove(conn);
-                    if (conn.geometry) conn.geometry.dispose();
-                    if (conn.material) conn.material.dispose();
-                    return false;
+            // Reset node colors to original
+            Object.values(layers).forEach(layer => {
+                layer.nodes.forEach(node => {
+                    if (node.userData.originalColor) {
+                        node.material.color = node.userData.originalColor.clone();
+                        node.material.emissive = node.userData.originalColor.clone();
+                        node.material.emissiveIntensity = 0.3;
+                        delete node.userData.isThreatHighlighted; // Clear threat flag
+                    }
+                });
+            });
+            
+            // Reset connection colors to original
+            connections.forEach(connection => {
+                if (connection.userData.originalColor && connection.userData.isCylinder) {
+                    connection.material.color = connection.userData.originalColor.clone();
+                    connection.material.emissive = connection.userData.originalColor.clone();
+                    connection.material.emissiveIntensity = 0.3;
+                    connection.material.opacity = 0.8;
+                    delete connection.userData.originalColor; // Clean up
+                    delete connection.userData.isThreatHighlighted; // Clear threat flag
+                } else if (connection.userData.isArrow && connection.userData.connection) {
+                    // Reset arrow colors based on their connection type
+                    const cylinder = connection.userData.connection;
+                    if (cylinder.userData.originalColor) {
+                        connection.material.color = cylinder.userData.originalColor.clone();
+                        connection.material.emissive = cylinder.userData.originalColor.clone();
+                        connection.material.emissiveIntensity = 0.3;
+                        connection.material.opacity = 0.9;
+                        delete connection.userData.isThreatHighlighted; // Clear threat flag
+                    }
                 }
-                return true;
             });
             
             document.getElementById('threat-level').innerHTML = 
@@ -1824,7 +2078,7 @@
                     
                     // Calculate the center Y position based on spacing
                     const minLayer = 0;
-                    const maxLayer = 9;
+                    const maxLayer = 10;  // Updated from 9 to 10 for customer layer
                     const centerY = (minLayer + maxLayer) * spacing / 2;
                     
                     // Update all layer node positions
@@ -1982,43 +2236,186 @@
 
         // Additional scenarios
         function runBreachScenario() {
-            clearAllLayers();
-            
-            // Show runtime and related layers
-            setTimeout(() => {
-                document.getElementById('toggle-runtime').checked = true;
-                toggleLayer('runtime');
-            }, 500);
-            
-            setTimeout(() => {
-                // Find compromised node
-                const breachedNode = layers.runtime.nodes.find(n => n.userData.compromised);
-                if (breachedNode) selectNode(breachedNode);
-            }, 1000);
-            
-            setTimeout(() => {
-                document.getElementById('toggle-application').checked = true;
-                toggleLayer('application');
-            }, 2000);
-            
-            setTimeout(() => {
-                document.getElementById('toggle-business').checked = true;
-                toggleLayer('business');
+            // Find the compromised node and color the impact chain
+            const breachedNode = layers.runtime.nodes.find(n => n.userData.compromised);
+            if (breachedNode) {
+                selectNode(breachedNode);
                 
-                // Show blast radius
-                const breachedNode = layers.runtime.nodes.find(n => n.userData.compromised);
-                if (breachedNode) {
-                    // Create threat connections
-                    const authApp = layers.application.nodes.find(n => n.userData.id === 'app2');
-                    const authBusiness = layers.business.nodes.find(n => n.userData.id === 'bf2');
+                // Turn breached node pink
+                breachedNode.material.color = new THREE.Color(0xff1493);
+                breachedNode.material.emissive = new THREE.Color(0xff1493);
+                breachedNode.material.emissiveIntensity = 0.8;
+                breachedNode.userData.isThreatHighlighted = true;
+                
+                // Set to track all affected nodes
+                const affectedNodes = new Set();
+                affectedNodes.add(breachedNode);
+                
+                // Function to recursively trace upward paths
+                function traceUpstream(node) {
+                    // Find all connections where this node is the END (i.e., edges pointing INTO this node)
+                    connections.forEach(connection => {
+                        if (connection.userData.isCylinder && connection.userData.end === node) {
+                            const upstreamNode = connection.userData.start;
+                            
+                            // Color the connection pink
+                            connection.material.color = new THREE.Color(0xff1493);
+                            connection.material.emissive = new THREE.Color(0xff1493);
+                            connection.material.emissiveIntensity = 0.6;
+                            connection.material.opacity = 1;
+                            connection.userData.isThreatHighlighted = true;
+                            
+                            // Store original color
+                            if (!connection.userData.originalColor) {
+                                connection.userData.originalColor = new THREE.Color(connection.userData.type === 'parent' ? 0x3b82f6 : 
+                                                                                 connection.userData.type === 'data-flow' ? 0x10b981 : 
+                                                                                 connection.userData.type === 'dependency' ? 0xf97316 : 
+                                                                                 connection.userData.type === 'authenticates' ? 0x8b5cf6 : 0x3b82f6);
+                            }
+                            
+                            // Color the arrow too
+                            connections.forEach(arrow => {
+                                if (arrow.userData.isArrow && arrow.userData.connection === connection) {
+                                    arrow.material.color = new THREE.Color(0xff1493);
+                                    arrow.material.emissive = new THREE.Color(0xff1493);
+                                    arrow.material.emissiveIntensity = 0.6;
+                                    arrow.material.opacity = 1;
+                                    arrow.userData.isThreatHighlighted = true;
+                                }
+                            });
+                            
+                            // If we haven't seen this upstream node yet, process it
+                            if (!affectedNodes.has(upstreamNode)) {
+                                affectedNodes.add(upstreamNode);
+                                
+                                // Color the upstream node pink
+                                if (upstreamNode && upstreamNode.material) {
+                                    upstreamNode.material.color = new THREE.Color(0xff1493);
+                                    upstreamNode.material.emissive = new THREE.Color(0xff1493);
+                                    upstreamNode.material.emissiveIntensity = 0.8;
+                                    upstreamNode.userData.isThreatHighlighted = true;
+                                }
+                                
+                                // Recursively trace further upstream
+                                traceUpstream(upstreamNode);
+                            }
+                        }
+                    });
                     
-                    if (authApp) createConnection(breachedNode, authApp, 'threat');
-                    if (authBusiness && authApp) createConnection(authApp, authBusiness, 'threat');
+                    // Also check parent-child relationships (for cross-layer connections)
+                    if (node.userData.parent) {
+                        // Find the parent node
+                        Object.values(layers).forEach(layer => {
+                            layer.nodes.forEach(parentNode => {
+                                if (parentNode.userData.id === node.userData.parent && !affectedNodes.has(parentNode)) {
+                                    affectedNodes.add(parentNode);
+                                    
+                                    // Color the parent node
+                                    parentNode.material.color = new THREE.Color(0xff1493);
+                                    parentNode.material.emissive = new THREE.Color(0xff1493);
+                                    parentNode.material.emissiveIntensity = 0.8;
+                                    parentNode.userData.isThreatHighlighted = true;
+                                    
+                                    // Find and color the connection between node and parent (in either direction)
+                                    connections.forEach(connection => {
+                                        if (connection.userData.isCylinder && 
+                                            ((connection.userData.start === node && connection.userData.end === parentNode) ||
+                                             (connection.userData.start === parentNode && connection.userData.end === node))) {
+                                            // Color the connection
+                                            connection.material.color = new THREE.Color(0xff1493);
+                                            connection.material.emissive = new THREE.Color(0xff1493);
+                                            connection.material.emissiveIntensity = 0.6;
+                                            connection.material.opacity = 1;
+                                            connection.userData.isThreatHighlighted = true;
+                                            
+                                            // Store original color
+                                            if (!connection.userData.originalColor) {
+                                                connection.userData.originalColor = new THREE.Color(connection.userData.type === 'parent' ? 0x3b82f6 : 
+                                                                                                 connection.userData.type === 'data-flow' ? 0x10b981 : 
+                                                                                                 connection.userData.type === 'dependency' ? 0xf97316 : 
+                                                                                                 connection.userData.type === 'authenticates' ? 0x8b5cf6 : 0x3b82f6);
+                                            }
+                                            
+                                            // Also color the arrow
+                                            connections.forEach(arrow => {
+                                                if (arrow.userData.isArrow && arrow.userData.connection === connection) {
+                                                    arrow.material.color = new THREE.Color(0xff1493);
+                                                    arrow.material.emissive = new THREE.Color(0xff1493);
+                                                    arrow.material.emissiveIntensity = 0.6;
+                                                    arrow.material.opacity = 1;
+                                                    arrow.userData.isThreatHighlighted = true;
+                                                }
+                                            });
+                                        }
+                                    });
+                                    
+                                    // Continue tracing upstream
+                                    traceUpstream(parentNode);
+                                }
+                            });
+                        });
+                    }
+                    
+                    // Also check if any nodes have this node as their parent (reverse parent lookup)
+                    Object.values(layers).forEach(layer => {
+                        layer.nodes.forEach(childNode => {
+                            if (childNode.userData.parent === node.userData.id && !affectedNodes.has(childNode)) {
+                                // We found a node that has the current node as parent
+                                // Check if there's a connection FROM this child TO our node
+                                connections.forEach(connection => {
+                                    if (connection.userData.isCylinder && 
+                                        connection.userData.start === childNode && 
+                                        connection.userData.end === node) {
+                                        // This is an upstream connection - trace from the child
+                                        affectedNodes.add(childNode);
+                                        
+                                        // Color the child node
+                                        childNode.material.color = new THREE.Color(0xff1493);
+                                        childNode.material.emissive = new THREE.Color(0xff1493);
+                                        childNode.material.emissiveIntensity = 0.8;
+                                        childNode.userData.isThreatHighlighted = true;
+                                        
+                                        // Color the connection
+                                        connection.material.color = new THREE.Color(0xff1493);
+                                        connection.material.emissive = new THREE.Color(0xff1493);
+                                        connection.material.emissiveIntensity = 0.6;
+                                        connection.material.opacity = 1;
+                                        connection.userData.isThreatHighlighted = true;
+                                        
+                                        // Store original color
+                                        if (!connection.userData.originalColor) {
+                                            connection.userData.originalColor = new THREE.Color(connection.userData.type === 'parent' ? 0x3b82f6 : 
+                                                                                             connection.userData.type === 'data-flow' ? 0x10b981 : 
+                                                                                             connection.userData.type === 'dependency' ? 0xf97316 : 
+                                                                                             connection.userData.type === 'authenticates' ? 0x8b5cf6 : 0x3b82f6);
+                                        }
+                                        
+                                        // Color the arrow
+                                        connections.forEach(arrow => {
+                                            if (arrow.userData.isArrow && arrow.userData.connection === connection) {
+                                                arrow.material.color = new THREE.Color(0xff1493);
+                                                arrow.material.emissive = new THREE.Color(0xff1493);
+                                                arrow.material.emissiveIntensity = 0.6;
+                                                arrow.material.opacity = 1;
+                                                arrow.userData.isThreatHighlighted = true;
+                                            }
+                                        });
+                                        
+                                        // Continue tracing upstream from the child
+                                        traceUpstream(childNode);
+                                    }
+                                });
+                            }
+                        });
+                    });
                 }
+                
+                // Start tracing from the breached node
+                traceUpstream(breachedNode);
                 
                 document.getElementById('threat-level').innerHTML = 
                     'Critical <span class="threat-indicator threat-critical"></span>';
-            }, 3000);
+            }
         }
 
         function runThreatSimulation() {
@@ -2027,18 +2424,40 @@
                 return;
             }
             
-            // Add random threat connections between visible nodes
-            const visibleNodes = Object.values(layers)
-                .filter(l => l.visible)
-                .flatMap(l => l.nodes);
+            // Color random existing connections as threats
+            const visibleConnections = connections.filter(conn => 
+                conn.userData.isCylinder && conn.visible
+            );
             
-            for (let i = 0; i < 5; i++) {
-                const node1 = visibleNodes[Math.floor(Math.random() * visibleNodes.length)];
-                const node2 = visibleNodes[Math.floor(Math.random() * visibleNodes.length)];
+            // Randomly select up to 5 connections to turn into threat paths
+            const numThreats = Math.min(5, visibleConnections.length);
+            const selectedConnections = [];
+            
+            for (let i = 0; i < numThreats; i++) {
+                const randomIndex = Math.floor(Math.random() * visibleConnections.length);
+                const connection = visibleConnections[randomIndex];
                 
-                if (node1 !== node2) {
+                if (!selectedConnections.includes(connection)) {
+                    selectedConnections.push(connection);
+                    
                     setTimeout(() => {
-                        createConnection(node1, node2, 'threat');
+                        // Color the connection red
+                        colorExistingConnection(connection.userData.start, connection.userData.end);
+                        
+                        // Also color the connected nodes pink
+                        if (connection.userData.start && connection.userData.start.material) {
+                            connection.userData.start.material.color = new THREE.Color(0xff1493);
+                            connection.userData.start.material.emissive = new THREE.Color(0xff1493);
+                            connection.userData.start.material.emissiveIntensity = 0.8;
+                            connection.userData.start.userData.isThreatHighlighted = true;
+                        }
+                        
+                        if (connection.userData.end && connection.userData.end.material) {
+                            connection.userData.end.material.color = new THREE.Color(0xff1493);
+                            connection.userData.end.material.emissive = new THREE.Color(0xff1493);
+                            connection.userData.end.material.emissiveIntensity = 0.8;
+                            connection.userData.end.userData.isThreatHighlighted = true;
+                        }
                     }, i * 300);
                 }
             }
