@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Wardley Map Editor</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            color: #333;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        
+        .header-controls {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+        
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn-secondary {
+            background-color: #7f8c8d;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #5a6c7d;
+        }
+        
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .editor-panel {
+            width: 400px;
+            background-color: white;
+            border-right: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+        
+        .map-panel {
+            flex: 1;
+            background-color: #fafafa;
+            padding: 20px;
+            padding-top: 0;
+            overflow: auto;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        
+        .component-editor-bar {
+            background-color: #ecf0f1;
+            border-bottom: 1px solid #bdc3c7;
+            padding: 15px;
+            min-height: 80px;
+            margin: 0 -20px 20px -20px;
+            display: flex;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        
+        .component-editor-bar h3 {
+            margin: 0;
+            font-size: 16px;
+        }
+        
+        .editor-placeholder {
+            color: #7f8c8d;
+            font-style: italic;
+        }
+        
+        .edge-selected-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .edge-selected-info span {
+            font-size: 14px;
+            color: #2c3e50;
+        }
+        
+        .inline-form {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .inline-form-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .inline-form-group label {
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .inline-form-group input,
+        .inline-form-group select {
+            padding: 4px 8px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+        
+        .tabs {
+            display: flex;
+            background-color: #ecf0f1;
+            border-bottom: 1px solid #bdc3c7;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+        
+        .tab:hover {
+            background-color: #d5d8dc;
+        }
+        
+        .tab.active {
+            background-color: white;
+            border-bottom: 2px solid #3498db;
+        }
+        
+        .editor-content {
+            flex: 1;
+            overflow: auto;
+            padding: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .dependency-item {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 8px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .delete-btn {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .delete-btn:hover {
+            background-color: #c0392b;
+        }
+        
+        svg {
+            width: 100%;
+            flex: 1;
+            background-color: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            cursor: crosshair;
+        }
+        
+        .component {
+            cursor: move;
+            transition: all 0.3s ease;
+        }
+        
+        .component:hover rect {
+            filter: brightness(1.1);
+        }
+        
+        .component.selected rect {
+            stroke-width: 3 !important;
+            stroke: #2980b9 !important;
+        }
+        
+        .component.link-mode rect {
+            stroke-width: 4 !important;
+            stroke: #e74c3c !important;
+            filter: drop-shadow(0 0 5px rgba(231, 76, 60, 0.5));
+        }
+        
+        .component-box {
+            rx: 5;
+            stroke-width: 2;
+        }
+        
+        .component-text {
+            fill: white;
+            text-anchor: middle;
+            font-size: 12px;
+            font-weight: 500;
+            pointer-events: none;
+        }
+        
+        .dependency {
+            fill: none;
+            stroke: #34495e;
+            stroke-width: 2;
+            marker-end: url(#arrowhead);
+            cursor: pointer;
+            transition: stroke-width 0.2s;
+        }
+        
+        .dependency:hover {
+            stroke-width: 4;
+        }
+        
+        .dependency.selected {
+            stroke: #3498db;
+            stroke-width: 4;
+        }
+        
+        .dependency.capital {
+            stroke: #e74c3c;
+            stroke-width: 3;
+            stroke-dasharray: 5, 5;
+        }
+        
+        .axis-label {
+            fill: #666;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .evolution-label {
+            fill: #999;
+            font-size: 12px;
+        }
+        
+        .grid-line {
+            stroke: #f0f0f0;
+            stroke-width: 1;
+        }
+        
+        .drop-zone {
+            border: 2px dashed #bdc3c7;
+            border-radius: 4px;
+            padding: 20px;
+            text-align: center;
+            color: #7f8c8d;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+        
+        .drop-zone.drag-over {
+            border-color: #3498db;
+            background-color: #ebf5fb;
+            color: #2c3e50;
+        }
+        
+        .json-editor {
+            width: 100%;
+            height: 100%;
+            min-height: 400px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 13px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            resize: none;
+        }
+        
+        .error-message {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        
+        .success-message {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        
+        input[type="file"] {
+            display: none;
+        }
+        
+        .status-bar {
+            background-color: #34495e;
+            color: white;
+            padding: 5px 15px;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: white;
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+            right: 0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+        
+        .dropdown-content button {
+            color: #333;
+            padding: 10px 16px;
+            text-decoration: none;
+            display: block;
+            width: 100%;
+            text-align: left;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .dropdown-content button:hover {
+            background-color: #f1f1f1;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Wardley Map Editor</h1>
+        <div class="header-controls">
+            <select id="mapSelector" class="btn btn-secondary">
+                <option value="tea">☕ Tea Shop</option>
+                <option value="tech">💻 Tech Startup</option>
+                <option value="ecommerce">🛒 E-Commerce</option>
+            </select>
+            <button class="btn" onclick="newMap()">New Map</button>
+            <div class="dropdown">
+                <button class="btn">Download ▼</button>
+                <div class="dropdown-content">
+                    <button onclick="downloadJSON()">View JSON in New Tab</button>
+                    <button onclick="downloadSVG()">View SVG in New Tab</button>
+                    <button onclick="downloadPNG()">View PNG in New Tab</button>
+                    <button onclick="downloadWithLink('json')">Download JSON File</button>
+                    <button onclick="downloadWithLink('svg')">Download SVG File</button>
+                </div>
+            </div>
+            <label for="fileInput" class="btn">Import JSON</label>
+            <input type="file" id="fileInput" accept=".json" onchange="importMap(event)">
+        </div>
+    </div>
+    
+    <div class="main-container">
+        <div class="editor-panel">
+            <div class="tabs">
+                <button class="tab active" onclick="showTab('visual')">Visual Editor</button>
+                <button class="tab" onclick="showTab('json')">JSON Editor</button>
+            </div>
+            
+            <div class="editor-content">
+                <div id="visualEditor">
+                    <div class="drop-zone" id="dropZone">
+                        Drag and drop a JSON file here to import
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Map Name</label>
+                        <input type="text" id="mapName" oninput="updateMapName()">
+                    </div>
+                    
+                    <h3>Instructions</h3>
+                    <ul style="font-size: 13px; line-height: 1.6;">
+                        <li><strong>Add Component:</strong> Double-click on the canvas</li>
+                        <li><strong>Select Component:</strong> Click on a component</li>
+                        <li><strong>Create Dependency:</strong> Select a component, then hold Shift and click another</li>
+                        <li><strong>Delete Dependency:</strong> Click on a line to select it, then click Delete</li>
+                        <li><strong>Move Components:</strong> Drag and drop</li>
+                    </ul>
+                    
+                    <h3>Dependencies</h3>
+                    <div id="dependencyList"></div>
+                </div>
+                
+                <div id="jsonEditor" style="display: none;">
+                    <textarea class="json-editor" id="jsonTextarea" oninput="validateJson()"></textarea>
+                    <div id="jsonMessage"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="map-panel">
+            <div class="component-editor-bar" id="componentEditorBar">
+                <div id="placeholderContent" style="width: 100%;">
+                    <h3 class="editor-placeholder">Select a component or edge to edit</h3>
+                </div>
+                <div id="componentEditContent" style="display: none; width: 100%;">
+                    <h3>Edit Component: <span id="editingComponentName"></span></h3>
+                    <div class="inline-form">
+                        <div class="inline-form-group">
+                            <label>Name:</label>
+                            <input type="text" id="compName" oninput="updateComponent()" style="width: 150px;">
+                        </div>
+                        <div class="inline-form-group">
+                            <label>Type:</label>
+                            <select id="compType" onchange="updateComponent()">
+                                <option value="genesis">Genesis</option>
+                                <option value="custom">Custom</option>
+                                <option value="product">Product</option>
+                                <option value="commodity">Commodity</option>
+                            </select>
+                        </div>
+                        <div class="inline-form-group">
+                            <label>Evolution:</label>
+                            <input type="number" id="compEvolution" min="0" max="1" step="0.05" oninput="updateComponent()" style="width: 60px;">
+                        </div>
+                        <div class="inline-form-group">
+                            <label>Visibility:</label>
+                            <input type="number" id="compVisibility" min="0" max="1" step="0.05" oninput="updateComponent()" style="width: 60px;">
+                        </div>
+                        <button class="delete-btn" onclick="deleteComponent()">Delete</button>
+                    </div>
+                </div>
+                <div id="edgeEditContent" style="display: none; width: 100%; display: flex; justify-content: space-between; align-items: center;">
+                    <div class="edge-selected-info">
+                        <h3>Selected Edge</h3>
+                        <span id="edgeDescription"></span>
+                    </div>
+                    <button class="delete-btn" onclick="deleteSelectedDependency()">Delete Edge</button>
+                </div>
+            </div>
+            
+            <svg id="wardley-map" viewBox="0 0 1000 600">
+                <defs>
+                    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                        <polygon points="0 0, 10 3, 0 6" fill="#34495e" />
+                    </marker>
+                </defs>
+                
+                <g id="grid"></g>
+                <g id="axes"></g>
+                <g id="dependencies"></g>
+                <g id="components"></g>
+            </svg>
+            
+            <div class="status-bar">
+                <span id="statusText">Ready</span>
+                <span id="coordinatesText">Click to add component</span>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Initial map data
+        const maps = {
+            tea: {
+                name: "Tea Shop",
+                components: [
+                    { id: 'cup-of-tea', name: 'Cup of Tea', evolution: 0.3, visibility: 0.9, type: 'custom' },
+                    { id: 'service', name: 'Customer Service', evolution: 0.35, visibility: 0.8, type: 'custom' },
+                    { id: 'staff', name: 'Staff', evolution: 0.4, visibility: 0.65, type: 'custom' },
+                    { id: 'training', name: 'Training', evolution: 0.6, visibility: 0.5, type: 'product' },
+                    { id: 'cup', name: 'Cup', evolution: 0.85, visibility: 0.7, type: 'commodity' },
+                    { id: 'tea', name: 'Tea', evolution: 0.65, visibility: 0.75, type: 'product' },
+                    { id: 'hot-water', name: 'Hot Water', evolution: 0.6, visibility: 0.6, type: 'product' },
+                    { id: 'kettle', name: 'Kettle', evolution: 0.7, visibility: 0.45, type: 'product' },
+                    { id: 'water', name: 'Water', evolution: 0.9, visibility: 0.4, type: 'commodity' },
+                    { id: 'electricity', name: 'Electricity', evolution: 0.95, visibility: 0.3, type: 'commodity' },
+                    { id: 'teabag', name: 'Teabag', evolution: 0.7, visibility: 0.65, type: 'product' },
+                    { id: 'milk', name: 'Milk', evolution: 0.85, visibility: 0.55, type: 'commodity' },
+                    { id: 'sugar', name: 'Sugar', evolution: 0.9, visibility: 0.5, type: 'commodity' }
+                ],
+                dependencies: [
+                    { from: 'cup-of-tea', to: 'cup' },
+                    { from: 'cup-of-tea', to: 'tea' },
+                    { from: 'cup-of-tea', to: 'service' },
+                    { from: 'service', to: 'staff' },
+                    { from: 'staff', to: 'training' },
+                    { from: 'tea', to: 'hot-water' },
+                    { from: 'tea', to: 'teabag' },
+                    { from: 'tea', to: 'milk' },
+                    { from: 'tea', to: 'sugar' },
+                    { from: 'hot-water', to: 'water' },
+                    { from: 'hot-water', to: 'kettle' },
+                    { from: 'kettle', to: 'electricity' }
+                ]
+            },
+            tech: {
+                name: "Tech Startup",
+                components: [
+                    { id: 'user-value', name: 'User Value', evolution: 0.1, visibility: 0.95, type: 'genesis' },
+                    { id: 'web-app', name: 'Web Application', evolution: 0.3, visibility: 0.85, type: 'custom' },
+                    { id: 'mobile-app', name: 'Mobile App', evolution: 0.35, visibility: 0.8, type: 'custom' },
+                    { id: 'api', name: 'API', evolution: 0.4, visibility: 0.7, type: 'custom' },
+                    { id: 'business-logic', name: 'Business Logic', evolution: 0.2, visibility: 0.6, type: 'genesis' },
+                    { id: 'ml-model', name: 'ML Model', evolution: 0.25, visibility: 0.5, type: 'custom' },
+                    { id: 'auth', name: 'Authentication', evolution: 0.6, visibility: 0.65, type: 'product' },
+                    { id: 'database', name: 'Database', evolution: 0.7, visibility: 0.55, type: 'product' },
+                    { id: 'ui-framework', name: 'UI Framework', evolution: 0.65, visibility: 0.75, type: 'product' },
+                    { id: 'oauth', name: 'OAuth Provider', evolution: 0.85, visibility: 0.6, type: 'commodity' },
+                    { id: 'ml-framework', name: 'ML Framework', evolution: 0.7, visibility: 0.45, type: 'product' },
+                    { id: 'storage', name: 'Cloud Storage', evolution: 0.9, visibility: 0.4, type: 'commodity' },
+                    { id: 'compute', name: 'Cloud Compute', evolution: 0.95, visibility: 0.35, type: 'commodity' }
+                ],
+                dependencies: [
+                    { from: 'user-value', to: 'web-app' },
+                    { from: 'user-value', to: 'mobile-app' },
+                    { from: 'web-app', to: 'api' },
+                    { from: 'web-app', to: 'ui-framework' },
+                    { from: 'mobile-app', to: 'api' },
+                    { from: 'api', to: 'business-logic' },
+                    { from: 'api', to: 'auth' },
+                    { from: 'business-logic', to: 'database' },
+                    { from: 'business-logic', to: 'ml-model' },
+                    { from: 'ml-model', to: 'ml-framework' },
+                    { from: 'ml-model', to: 'compute' },
+                    { from: 'auth', to: 'oauth' },
+                    { from: 'database', to: 'storage' }
+                ]
+            },
+            ecommerce: {
+                name: "E-Commerce Platform",
+                components: [
+                    { id: 'customer', name: 'Customer Experience', evolution: 0.15, visibility: 0.95, type: 'genesis' },
+                    { id: 'storefront', name: 'Storefront', evolution: 0.35, visibility: 0.85, type: 'custom' },
+                    { id: 'search', name: 'Search', evolution: 0.6, visibility: 0.8, type: 'product' },
+                    { id: 'recommendations', name: 'Recommendations', evolution: 0.3, visibility: 0.75, type: 'custom' },
+                    { id: 'cart', name: 'Shopping Cart', evolution: 0.65, visibility: 0.8, type: 'product' },
+                    { id: 'catalog', name: 'Product Catalog', evolution: 0.7, visibility: 0.7, type: 'product' },
+                    { id: 'inventory', name: 'Inventory System', evolution: 0.6, visibility: 0.6, type: 'product' },
+                    { id: 'warehouse', name: 'Warehouse Mgmt', evolution: 0.4, visibility: 0.5, type: 'custom' },
+                    { id: 'payment', name: 'Payment Processing', evolution: 0.85, visibility: 0.65, type: 'commodity' },
+                    { id: 'search-engine', name: 'Search Engine', evolution: 0.9, visibility: 0.7, type: 'commodity' },
+                    { id: 'ml-platform', name: 'ML Platform', evolution: 0.85, visibility: 0.65, type: 'commodity' },
+                    { id: 'user-data', name: 'User Data', evolution: 0.45, visibility: 0.6, type: 'custom' },
+                    { id: 'session', name: 'Session Storage', evolution: 0.9, visibility: 0.75, type: 'commodity' },
+                    { id: 'cms', name: 'CMS', evolution: 0.75, visibility: 0.65, type: 'product' },
+                    { id: 'fulfillment', name: 'Fulfillment Partner', evolution: 0.8, visibility: 0.4, type: 'commodity' },
+                    { id: 'payment-gateway', name: 'Payment Gateway', evolution: 0.95, visibility: 0.55, type: 'commodity' }
+                ],
+                dependencies: [
+                    { from: 'customer', to: 'storefront' },
+                    { from: 'customer', to: 'search' },
+                    { from: 'customer', to: 'recommendations' },
+                    { from: 'storefront', to: 'catalog' },
+                    { from: 'storefront', to: 'cart' },
+                    { from: 'search', to: 'search-engine' },
+                    { from: 'recommendations', to: 'ml-platform' },
+                    { from: 'recommendations', to: 'user-data' },
+                    { from: 'cart', to: 'session' },
+                    { from: 'catalog', to: 'inventory' },
+                    { from: 'catalog', to: 'cms' },
+                    { from: 'inventory', to: 'warehouse' },
+                    { from: 'warehouse', to: 'fulfillment', type: 'capital' },
+                    { from: 'payment', to: 'payment-gateway', type: 'capital' }
+                ]
+            }
+        };
+        
+        // Color mapping
+        const colors = {
+            genesis: '#e74c3c',
+            custom: '#f39c12',
+            product: '#27ae60',
+            commodity: '#8e44ad'
+        };
+        
+        // State
+        let currentMap = 'tea';
+        let currentData = JSON.parse(JSON.stringify(maps[currentMap]));
+        let selectedComponent = null;
+        let selectedDependency = null;
+        let activeTab = 'visual';
+        let isLinkMode = false;
+        let jsonTimeout = null;
+        
+        // SVG dimensions
+        const width = 1000;
+        const height = 600;
+        const margin = { top: 50, right: 50, bottom: 50, left: 50 };
+        const plotWidth = width - margin.left - margin.right;
+        const plotHeight = height - margin.top - margin.bottom;
+        
+        // Initialize drag and drop
+        const dropZone = document.getElementById('dropZone');
+        dropZone.addEventListener('dragover', dragOverHandler);
+        dropZone.addEventListener('dragleave', dragLeaveHandler);
+        dropZone.addEventListener('drop', dropHandler);
+        
+        // Prevent default drag behaviors on document
+        document.addEventListener('dragover', (e) => {
+            e.preventDefault();
+        });
+        
+        document.addEventListener('drop', (e) => {
+            e.preventDefault();
+        });
+        
+        // Initialize
+        document.getElementById('mapSelector').addEventListener('change', (e) => {
+            currentMap = e.target.value;
+            currentData = JSON.parse(JSON.stringify(maps[currentMap]));
+            updateUI();
+            drawMap();
+        });
+        
+        // Double-click to add component
+        document.getElementById('wardley-map').addEventListener('dblclick', (e) => {
+            const pt = getMousePosition(e);
+            const evolution = Math.max(0, Math.min(1, (pt.x - margin.left) / plotWidth));
+            const visibility = Math.max(0, Math.min(1, 1 - (pt.y - margin.top) / plotHeight));
+            
+            const newComp = {
+                id: 'comp-' + Date.now(),
+                name: 'New Component',
+                evolution: evolution,
+                visibility: visibility,
+                type: 'custom'
+            };
+            
+            currentData.components.push(newComp);
+            updateUI();
+            drawMap();
+            selectComponent(newComp);
+        });
+        
+        // Mouse move for coordinates
+        document.getElementById('wardley-map').addEventListener('mousemove', (e) => {
+            const pt = getMousePosition(e);
+            const evolution = Math.max(0, Math.min(1, (pt.x - margin.left) / plotWidth));
+            const visibility = Math.max(0, Math.min(1, 1 - (pt.y - margin.top) / plotHeight));
+            document.getElementById('coordinatesText').textContent = 
+                `Evolution: ${evolution.toFixed(2)}, Visibility: ${visibility.toFixed(2)}`;
+        });
+        
+        // Click on SVG to deselect
+        document.getElementById('wardley-map').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) {
+                selectedComponent = null;
+                selectedDependency = null;
+                updateComponentEditor();
+                updateComponentVisuals();
+                document.getElementById('statusText').textContent = 'Ready';
+            }
+        });
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Shift' && selectedComponent) {
+                isLinkMode = true;
+                updateComponentVisuals();
+                document.getElementById('statusText').textContent = 
+                    `Link mode: Click target for ${selectedComponent.name}`;
+            }
+            
+            if (e.key === 'Escape') {
+                isLinkMode = false;
+                selectedComponent = null;
+                selectedDependency = null;
+                updateComponentVisuals();
+                updateComponentEditor();
+                document.getElementById('statusText').textContent = 'Ready';
+            }
+            
+            if (e.key === 'Delete' && selectedDependency) {
+                deleteSelectedDependency();
+            }
+        });
+        
+        document.addEventListener('keyup', (e) => {
+            if (e.key === 'Shift') {
+                isLinkMode = false;
+                updateComponentVisuals();
+                document.getElementById('statusText').textContent = 'Ready';
+            }
+        });
+        
+        // Tab switching
+        function showTab(tab) {
+            activeTab = tab;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            if (tab === 'visual') {
+                document.getElementById('visualEditor').style.display = 'block';
+                document.getElementById('jsonEditor').style.display = 'none';
+            } else {
+                document.getElementById('visualEditor').style.display = 'none';
+                document.getElementById('jsonEditor').style.display = 'block';
+                document.getElementById('jsonTextarea').value = JSON.stringify(currentData, null, 2);
+            }
+        }
+        
+        // Validate JSON in real-time
+        function validateJson() {
+            clearTimeout(jsonTimeout);
+            jsonTimeout = setTimeout(() => {
+                const messageDiv = document.getElementById('jsonMessage');
+                try {
+                    const newData = JSON.parse(document.getElementById('jsonTextarea').value);
+                    currentData = newData;
+                    updateUI();
+                    drawMap();
+                    messageDiv.className = 'success-message';
+                    messageDiv.textContent = 'Valid JSON - Map updated';
+                    setTimeout(() => messageDiv.innerHTML = '', 2000);
+                } catch (e) {
+                    messageDiv.className = 'error-message';
+                    messageDiv.textContent = 'Invalid JSON: ' + e.message;
+                }
+            }, 500);
+        }
+        
+        // Update UI
+        function updateUI() {
+            document.getElementById('mapName').value = currentData.name;
+            updateDependencyList();
+            if (activeTab === 'json') {
+                document.getElementById('jsonTextarea').value = JSON.stringify(currentData, null, 2);
+            }
+        }
+        
+        // Update component editor visibility
+        function updateComponentEditor() {
+            const placeholder = document.getElementById('placeholderContent');
+            const compEdit = document.getElementById('componentEditContent');
+            const edgeEdit = document.getElementById('edgeEditContent');
+            
+            if (selectedComponent) {
+                placeholder.style.display = 'none';
+                compEdit.style.display = 'block';
+                edgeEdit.style.display = 'none';
+                
+                document.getElementById('editingComponentName').textContent = selectedComponent.name;
+                document.getElementById('compName').value = selectedComponent.name;
+                document.getElementById('compType').value = selectedComponent.type;
+                document.getElementById('compEvolution').value = selectedComponent.evolution;
+                document.getElementById('compVisibility').value = selectedComponent.visibility;
+            } else if (selectedDependency) {
+                placeholder.style.display = 'none';
+                compEdit.style.display = 'none';
+                edgeEdit.style.display = 'flex';
+                
+                const fromComp = currentData.components.find(c => c.id === selectedDependency.from);
+                const toComp = currentData.components.find(c => c.id === selectedDependency.to);
+                if (fromComp && toComp) {
+                    document.getElementById('edgeDescription').textContent = 
+                        `${fromComp.name} → ${toComp.name}${selectedDependency.type === 'capital' ? ' (capital)' : ''}`;
+                }
+            } else {
+                placeholder.style.display = 'block';
+                compEdit.style.display = 'none';
+                edgeEdit.style.display = 'none';
+            }
+        }
+        
+        // Select component
+        function selectComponent(comp) {
+            selectedComponent = comp;
+            selectedDependency = null;
+            updateComponentEditor();
+            updateComponentVisuals();
+        }
+        
+        // Update component
+        function updateComponent() {
+            if (!selectedComponent) return;
+            
+            selectedComponent.name = document.getElementById('compName').value;
+            selectedComponent.type = document.getElementById('compType').value;
+            selectedComponent.evolution = parseFloat(document.getElementById('compEvolution').value);
+            selectedComponent.visibility = parseFloat(document.getElementById('compVisibility').value);
+            
+            document.getElementById('editingComponentName').textContent = selectedComponent.name;
+            
+            updateDependencyList();
+            drawMap();
+        }
+        
+        // Delete component
+        function deleteComponent() {
+            if (!selectedComponent) return;
+            
+            currentData.components = currentData.components.filter(c => c.id !== selectedComponent.id);
+            currentData.dependencies = currentData.dependencies.filter(d => 
+                d.from !== selectedComponent.id && d.to !== selectedComponent.id
+            );
+            
+            selectedComponent = null;
+            updateComponentEditor();
+            updateUI();
+            drawMap();
+        }
+        
+        // Update map name
+        function updateMapName() {
+            currentData.name = document.getElementById('mapName').value;
+        }
+        
+        // Dependency list
+        function updateDependencyList() {
+            const list = document.getElementById('dependencyList');
+            list.innerHTML = '';
+            
+            currentData.dependencies.forEach((dep, index) => {
+                const fromComp = currentData.components.find(c => c.id === dep.from);
+                const toComp = currentData.components.find(c => c.id === dep.to);
+                
+                if (fromComp && toComp) {
+                    const div = document.createElement('div');
+                    div.className = 'dependency-item';
+                    div.innerHTML = `
+                        <span>${fromComp.name} → ${toComp.name}${dep.type === 'capital' ? ' (capital)' : ''}</span>
+                        <button class="delete-btn" onclick="deleteDependency(${index})">Delete</button>
+                    `;
+                    list.appendChild(div);
+                }
+            });
+        }
+        
+        // Delete dependency
+        function deleteDependency(index) {
+            currentData.dependencies.splice(index, 1);
+            updateUI();
+            drawMap();
+        }
+        
+        // Delete selected dependency
+        function deleteSelectedDependency() {
+            if (!selectedDependency) return;
+            
+            const index = currentData.dependencies.indexOf(selectedDependency);
+            if (index > -1) {
+                currentData.dependencies.splice(index, 1);
+                selectedDependency = null;
+                updateComponentEditor();
+                updateUI();
+                drawMap();
+                document.getElementById('statusText').textContent = 'Edge deleted';
+            }
+        }
+        
+        // New map
+        function newMap() {
+            currentData = {
+                name: 'New Map',
+                components: [],
+                dependencies: []
+            };
+            selectedComponent = null;
+            selectedDependency = null;
+            updateUI();
+            updateComponentEditor();
+            drawMap();
+        }
+        
+        // Download functions
+        function downloadJSON() {
+            const dataStr = JSON.stringify(currentData, null, 2);
+            // Create a data URL instead of blob URL
+            const dataUrl = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+            
+            // Create a temporary link and click it
+            const link = document.createElement('a');
+            link.href = dataUrl;
+            link.download = (currentData.name || 'wardley-map') + '.json';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        
+        function downloadSVG() {
+            const svg = document.getElementById('wardley-map');
+            const clonedSvg = svg.cloneNode(true);
+            
+            // Add white background
+            const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            rect.setAttribute('width', '100%');
+            rect.setAttribute('height', '100%');
+            rect.setAttribute('fill', 'white');
+            clonedSvg.insertBefore(rect, clonedSvg.firstChild);
+            
+            // Add title
+            const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+            title.textContent = currentData.name || 'Wardley Map';
+            clonedSvg.insertBefore(title, clonedSvg.firstChild);
+            
+            const serializer = new XMLSerializer();
+            let svgStr = serializer.serializeToString(clonedSvg);
+            
+            // Add XML declaration
+            svgStr = '<?xml version="1.0" encoding="UTF-8"?>\n' + svgStr;
+            
+            // Create a data URL
+            const dataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgStr);
+            
+            // Create a temporary link and click it
+            const link = document.createElement('a');
+            link.href = dataUrl;
+            link.download = (currentData.name || 'wardley-map') + '.svg';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        
+        function downloadPNG() {
+            const svg = document.getElementById('wardley-map');
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = 1000;
+            canvas.height = 600;
+            
+            // Clone and prepare SVG
+            const clonedSvg = svg.cloneNode(true);
+            
+            // Add white background to the cloned SVG
+            const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            rect.setAttribute('width', '100%');
+            rect.setAttribute('height', '100%');
+            rect.setAttribute('fill', 'white');
+            clonedSvg.insertBefore(rect, clonedSvg.firstChild);
+            
+            const serializer = new XMLSerializer();
+            let svgStr = serializer.serializeToString(clonedSvg);
+            
+            // Convert SVG string to data URL
+            const svgDataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgStr);
+            
+            const img = new Image();
+            
+            img.onload = function() {
+                // Draw the image to canvas
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                
+                // Convert canvas to data URL and download
+                const pngDataUrl = canvas.toDataURL('image/png');
+                
+                const link = document.createElement('a');
+                link.href = pngDataUrl;
+                link.download = (currentData.name || 'wardley-map') + '.png';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            };
+            
+            img.onerror = function() {
+                console.error('Error loading SVG for PNG conversion');
+                alert('Unable to convert to PNG. Please try downloading as SVG instead.');
+            };
+            
+            img.src = svgDataUrl;
+        }
+        
+        // Alternative download method using anchor element
+        function downloadWithLink(format) {
+            let blob, filename;
+            
+            if (format === 'json') {
+                const dataStr = JSON.stringify(currentData, null, 2);
+                blob = new Blob([dataStr], { type: 'application/json' });
+                filename = (currentData.name || 'wardley-map') + '.json';
+            } else if (format === 'svg') {
+                const svg = document.getElementById('wardley-map');
+                const clonedSvg = svg.cloneNode(true);
+                
+                // Add white background
+                const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                rect.setAttribute('width', '100%');
+                rect.setAttribute('height', '100%');
+                rect.setAttribute('fill', 'white');
+                clonedSvg.insertBefore(rect, clonedSvg.firstChild);
+                
+                const serializer = new XMLSerializer();
+                let svgStr = serializer.serializeToString(clonedSvg);
+                svgStr = '<?xml version="1.0" encoding="UTF-8"?>\n' + svgStr;
+                
+                blob = new Blob([svgStr], { type: 'image/svg+xml' });
+                filename = (currentData.name || 'wardley-map') + '.svg';
+            }
+            
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            
+            setTimeout(() => URL.revokeObjectURL(url), 100);
+        }
+        
+        // Import map
+        function importMap(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    currentData = JSON.parse(e.target.result);
+                    updateUI();
+                    drawMap();
+                    document.getElementById('statusText').textContent = 'Map imported successfully';
+                } catch (err) {
+                    alert('Invalid JSON file: ' + err.message);
+                }
+            };
+            reader.readAsText(file);
+            
+            // Reset file input
+            event.target.value = '';
+        }
+        
+        // Drag and drop handlers
+        function dragOverHandler(ev) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            const isJson = Array.from(ev.dataTransfer.items).some(item => 
+                item.type === 'application/json' || 
+                (item.type === 'application/x-javascript' || // For .json files in some browsers
+                (item.kind === 'file' && item.type === '' && item.getAsFile().name.endsWith('.json')))
+            );
+            
+            if (isJson) {
+                ev.currentTarget.classList.add('drag-over');
+                ev.dataTransfer.dropEffect = 'copy';
+            } else {
+                ev.dataTransfer.dropEffect = 'none';
+            }
+        }
+        
+        function dragLeaveHandler(ev) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            ev.currentTarget.classList.remove('drag-over');
+        }
+        
+        function dropHandler(ev) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            ev.currentTarget.classList.remove('drag-over');
+            
+            const files = Array.from(ev.dataTransfer.files);
+            const jsonFile = files.find(file => file.name.endsWith('.json'));
+            
+            if (jsonFile) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        // Validate basic structure
+                        if (!data.components || !Array.isArray(data.components) || 
+                            !data.dependencies || !Array.isArray(data.dependencies)) {
+                            throw new Error('Invalid map structure: Missing components or dependencies arrays');
+                        }
+                        currentData = data;
+                        updateUI();
+                        drawMap();
+                        document.getElementById('statusText').textContent = 'Map imported successfully';
+                    } catch (err) {
+                        alert('Invalid Wardley Map JSON file: ' + err.message);
+                        document.getElementById('statusText').textContent = 'Import failed: Invalid JSON structure';
+                    }
+                };
+                reader.onerror = () => {
+                    alert('Error reading file');
+                    document.getElementById('statusText').textContent = 'Import failed: File read error';
+                };
+                reader.readAsText(jsonFile);
+            } else {
+                alert('Please drop a JSON file');
+                document.getElementById('statusText').textContent = 'Import failed: Not a JSON file';
+            }
+        }
+        
+        // Drawing functions
+        function drawGrid() {
+            const grid = document.getElementById('grid');
+            const axes = document.getElementById('axes');
+            
+            grid.innerHTML = '';
+            axes.innerHTML = '';
+            
+            // Vertical grid lines
+            const evolutionSteps = [
+                { pos: 0, label: 'Genesis' },
+                { pos: 0.25, label: 'Custom' },
+                { pos: 0.5, label: 'Product' },
+                { pos: 0.75, label: '' },
+                { pos: 1, label: 'Commodity' }
+            ];
+            
+            evolutionSteps.forEach(step => {
+                const x = margin.left + step.pos * plotWidth;
+                
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', x);
+                line.setAttribute('y1', margin.top);
+                line.setAttribute('x2', x);
+                line.setAttribute('y2', height - margin.bottom);
+                line.setAttribute('class', 'grid-line');
+                grid.appendChild(line);
+                
+                if (step.label) {
+                    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    text.setAttribute('x', x);
+                    text.setAttribute('y', height - margin.bottom + 20);
+                    text.setAttribute('text-anchor', 'middle');
+                    text.setAttribute('class', 'evolution-label');
+                    text.textContent = step.label;
+                    axes.appendChild(text);
+                }
+            });
+            
+            // Horizontal grid lines
+            for (let i = 0; i <= 10; i++) {
+                const y = margin.top + (1 - i/10) * plotHeight;
+                
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', margin.left);
+                line.setAttribute('y1', y);
+                line.setAttribute('x2', width - margin.right);
+                line.setAttribute('y2', y);
+                line.setAttribute('class', 'grid-line');
+                grid.appendChild(line);
+            }
+            
+            // Axes labels
+            const evolutionLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            evolutionLabel.setAttribute('x', width / 2);
+            evolutionLabel.setAttribute('y', height - 10);
+            evolutionLabel.setAttribute('text-anchor', 'middle');
+            evolutionLabel.setAttribute('class', 'axis-label');
+            evolutionLabel.textContent = 'Evolution →';
+            axes.appendChild(evolutionLabel);
+            
+            const visibilityLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            visibilityLabel.setAttribute('x', 20);
+            visibilityLabel.setAttribute('y', height / 2);
+            visibilityLabel.setAttribute('text-anchor', 'middle');
+            visibilityLabel.setAttribute('class', 'axis-label');
+            visibilityLabel.setAttribute('transform', `rotate(-90, 20, ${height / 2})`);
+            visibilityLabel.textContent = 'Visibility →';
+            axes.appendChild(visibilityLabel);
+        }
+        
+        function getPosition(component) {
+            return {
+                x: margin.left + component.evolution * plotWidth,
+                y: margin.top + (1 - component.visibility) * plotHeight
+            };
+        }
+        
+        function drawDependencies() {
+            const deps = document.getElementById('dependencies');
+            deps.innerHTML = '';
+            
+            currentData.dependencies.forEach(dep => {
+                const fromComp = currentData.components.find(c => c.id === dep.from);
+                const toComp = currentData.components.find(c => c.id === dep.to);
+                
+                if (fromComp && toComp) {
+                    const fromPos = getPosition(fromComp);
+                    const toPos = getPosition(toComp);
+                    
+                    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    const d = `M ${fromPos.x} ${fromPos.y} L ${toPos.x} ${toPos.y}`;
+                    path.setAttribute('d', d);
+                    path.setAttribute('class', dep.type === 'capital' ? 'dependency capital' : 'dependency');
+                    
+                    if (selectedDependency === dep) {
+                        path.classList.add('selected');
+                    }
+                    
+                    // Make clickable
+                    path.onclick = (e) => {
+                        e.stopPropagation();
+                        selectedDependency = dep;
+                        selectedComponent = null;
+                        updateComponentEditor();
+                        drawMap();
+                        document.getElementById('statusText').textContent = 'Edge selected';
+                    };
+                    
+                    deps.appendChild(path);
+                }
+            });
+        }
+        
+        function updateComponentVisuals() {
+            document.querySelectorAll('.component').forEach(g => {
+                g.classList.remove('selected', 'link-mode');
+                const comp = currentData.components.find(c => 
+                    g.getAttribute('data-id') === c.id
+                );
+                if (comp === selectedComponent) {
+                    g.classList.add('selected');
+                    if (isLinkMode) {
+                        g.classList.add('link-mode');
+                    }
+                }
+            });
+        }
+        
+        function drawComponents() {
+            const comps = document.getElementById('components');
+            comps.innerHTML = '';
+            
+            currentData.components.forEach(component => {
+                const pos = getPosition(component);
+                const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                g.setAttribute('class', 'component');
+                g.setAttribute('transform', `translate(${pos.x}, ${pos.y})`);
+                g.setAttribute('data-id', component.id);
+                
+                const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                rect.setAttribute('x', -50);
+                rect.setAttribute('y', -15);
+                rect.setAttribute('width', 100);
+                rect.setAttribute('height', 30);
+                rect.setAttribute('class', 'component-box');
+                rect.setAttribute('fill', colors[component.type]);
+                rect.setAttribute('stroke', colors[component.type]);
+                rect.setAttribute('stroke-opacity', '0.8');
+                g.appendChild(rect);
+                
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('y', 5);
+                text.setAttribute('class', 'component-text');
+                text.textContent = component.name;
+                g.appendChild(text);
+                
+                // Click handler
+                g.onclick = (e) => {
+                    e.stopPropagation();
+                    
+                    if (isLinkMode && selectedComponent && selectedComponent.id !== component.id) {
+                        // Create dependency
+                        const exists = currentData.dependencies.some(d => 
+                            d.from === selectedComponent.id && d.to === component.id
+                        );
+                        
+                        if (!exists) {
+                            currentData.dependencies.push({
+                                from: selectedComponent.id,
+                                to: component.id
+                            });
+                            updateUI();
+                            drawMap();
+                            
+                            document.getElementById('statusText').textContent = 
+                                `Created: ${selectedComponent.name} → ${component.name}`;
+                        } else {
+                            document.getElementById('statusText').textContent = 
+                                'Dependency already exists';
+                        }
+                    } else {
+                        selectComponent(component);
+                        document.getElementById('statusText').textContent = 
+                            `Selected: ${component.name}`;
+                    }
+                };
+                
+                // Make draggable
+                makeDraggable(g, component);
+                
+                comps.appendChild(g);
+            });
+            
+            updateComponentVisuals();
+        }
+        
+        function makeDraggable(element, component) {
+            let isDragging = false;
+            let startX, startY;
+            
+            element.addEventListener('mousedown', startDrag);
+            
+            function startDrag(e) {
+                if (e.button !== 0) return;
+                isDragging = true;
+                const point = getMousePosition(e);
+                startX = point.x - getPosition(component).x;
+                startY = point.y - getPosition(component).y;
+                
+                document.addEventListener('mousemove', drag);
+                document.addEventListener('mouseup', endDrag);
+                
+                e.preventDefault();
+            }
+            
+            function drag(e) {
+                if (!isDragging) return;
+                
+                const point = getMousePosition(e);
+                const newX = point.x - startX;
+                const newY = point.y - startY;
+                
+                component.evolution = Math.max(0, Math.min(1, (newX - margin.left) / plotWidth));
+                component.visibility = Math.max(0, Math.min(1, 1 - (newY - margin.top) / plotHeight));
+                
+                element.setAttribute('transform', `translate(${newX}, ${newY})`);
+                drawDependencies();
+                
+                if (selectedComponent && selectedComponent.id === component.id) {
+                    document.getElementById('compEvolution').value = component.evolution;
+                    document.getElementById('compVisibility').value = component.visibility;
+                }
+            }
+            
+            function endDrag() {
+                isDragging = false;
+                document.removeEventListener('mousemove', drag);
+                document.removeEventListener('mouseup', endDrag);
+            }
+        }
+        
+        function getMousePosition(e) {
+            const svg = document.getElementById('wardley-map');
+            const pt = svg.createSVGPoint();
+            pt.x = e.clientX;
+            pt.y = e.clientY;
+            return pt.matrixTransform(svg.getScreenCTM().inverse());
+        }
+        
+        function drawMap() {
+            drawGrid();
+            drawDependencies();
+            drawComponents();
+        }
+        
+        // Initialize
+        updateUI();
+        updateComponentEditor();
+        drawMap();
+    </script>
+</body>
+</html>

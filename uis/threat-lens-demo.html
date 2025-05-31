@@ -1,0 +1,2051 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ThreatLens - Multi-Layer Threat Modeling</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #ffffff;
+            color: #1e293b;
+            overflow: hidden;
+        }
+
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Control Panels */
+        .control-panel {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(226, 232, 240, 1);
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+        }
+
+        #layer-controls {
+            top: 20px;
+            right: 20px;
+            width: 260px;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+            padding: 18px;
+        }
+
+        #demo-controls {
+            top: 20px;
+            left: 20px;
+            width: 240px;
+            max-height: calc(100vh - 40px);  /* Changed from 420px to full height */
+            overflow-y: auto;
+            padding: 18px;
+        }
+
+        /* Layer Toggle Styles */
+        .layer-toggle {
+            margin: 6px 0;
+            padding: 10px;
+            background: rgba(248, 250, 252, 1);
+            border: 1px solid rgba(226, 232, 240, 1);
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .layer-toggle:hover {
+            background: rgba(241, 245, 249, 1);
+            border-color: rgba(203, 213, 225, 1);
+            transform: translateX(-2px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .layer-checkbox {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .layer-color-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+            margin-right: 8px;
+            flex-shrink: 0;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+
+        .layer-checkbox input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            margin-right: 8px;
+            cursor: pointer;
+            accent-color: #3b82f6;
+        }
+
+        .layer-name {
+            flex-grow: 1;
+            font-size: 13px;
+            font-weight: 500;
+            color: #1e293b;
+        }
+
+        .node-count {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-left: 8px;
+            font-weight: 500;
+            background: rgba(226, 232, 240, 0.8);
+            padding: 2px 8px;
+            border-radius: 10px;
+            min-width: 20px;
+            text-align: center;
+            display: inline-block;
+        }
+
+        .opacity-slider {
+            width: 100%;
+            margin-top: 10px;
+            height: 6px;
+            -webkit-appearance: none;
+            background: rgba(226, 232, 240, 1);
+            border-radius: 3px;
+            outline: none;
+            transition: background 0.3s ease;
+        }
+
+        .opacity-slider:hover {
+            background: rgba(203, 213, 225, 1);
+        }
+
+        .opacity-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #3b82f6;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+            transition: all 0.2s ease;
+        }
+
+        .opacity-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 2px 10px rgba(59, 130, 246, 0.5);
+        }
+
+        /* Button Styles */
+        .button {
+            padding: 8px 14px;
+            margin: 4px;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
+        }
+
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(59, 130, 246, 0.35);
+        }
+
+        .button.secondary {
+            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+            color: #475569;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .button.secondary:hover {
+            background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+        }
+
+        .button.danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.25);
+        }
+
+        /* Info Panel Styles */
+        h3 {
+            margin: 0 0 12px 0;
+            font-size: 16px;
+            color: #1e293b;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        
+        h4 {
+            margin: 0 0 8px 0;
+            font-size: 14px;
+            color: #334155;
+            font-weight: 500;
+        }
+
+        /* Info Items */
+        .info-item {
+            margin: 6px 0;
+            font-size: 13px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+        }
+
+        .info-item:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            color: #64748b;
+            font-weight: 400;
+        }
+
+        .info-value {
+            color: #1e293b;
+            font-weight: 600;
+        }
+
+        /* Threat Indicator */
+        .threat-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-left: 5px;
+        }
+
+        .threat-critical { background: #dc2626; }
+        .threat-high { background: #ef4444; }
+        .threat-medium { background: #f97316; }
+        .threat-low { background: #10b981; }
+
+        /* Demo Scenarios */
+        .scenario-button {
+            width: 100%;
+            margin: 6px 0;
+            text-align: left;
+            padding: 12px;
+            background: rgba(248, 250, 252, 1);
+            border: 1px solid rgba(226, 232, 240, 1);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .scenario-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .scenario-button:hover {
+            background: rgba(241, 245, 249, 1);
+            border-color: #3b82f6;
+            transform: translateX(-2px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .scenario-button:hover::before {
+            left: 100%;
+        }
+
+        .scenario-button strong {
+            display: block;
+            margin-bottom: 4px;
+            color: #1e293b;
+            font-size: 13px;
+        }
+
+        .scenario-button small {
+            color: #64748b;
+            font-size: 11px;
+        }
+
+        .scenario-button.danger {
+            border-color: rgba(239, 68, 68, 0.4);
+        }
+
+        .scenario-button.danger:hover {
+            border-color: #ef4444;
+            background: rgba(254, 242, 242, 1);
+        }
+
+        /* Loading and Messages */
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 24px;
+            color: #3b82f6;
+            font-weight: 500;
+        }
+
+        /* Legend */
+        .legend {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(226, 232, 240, 1);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 4px 0;
+            font-size: 11px;
+            color: #475569;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 3px;
+            margin-right: 8px;
+            border-radius: 2px;
+            box-shadow: 0 0 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Spacing Slider */
+        #spacing-control {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(226, 232, 240, 1);
+        }
+
+        .control-group {
+            margin: 12px 0;
+        }
+
+        .control-label {
+            font-size: 12px;
+            color: #64748b;
+            margin-bottom: 6px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Preset Views */
+        .preset-views {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+        .preset-button {
+            padding: 8px 14px;
+            font-size: 13px;
+            background: rgba(248, 250, 252, 1);
+            border: 1px solid rgba(226, 232, 240, 1);
+            border-radius: 6px;
+            color: #475569;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+
+        .preset-button:hover {
+            background: rgba(59, 130, 246, 0.1);
+            border-color: rgba(59, 130, 246, 0.5);
+            color: #3b82f6;
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+<body>
+    <div id="loading">Initializing ThreatLens...</div>
+    <div id="canvas-container"></div>
+
+    <!-- Layer Controls Panel -->
+    <div id="layer-controls" class="control-panel">
+        <h3>📊 Layer Controls</h3>
+        <div id="layer-toggles"></div>
+        
+        <div id="spacing-control">
+            <div class="control-group">
+                <div class="control-label">Layer Spacing <span id="spacing-value" style="font-weight: normal; color: #94a3b8;">(150)</span></div>
+                <input type="range" id="spacing-slider" min="30" max="150" value="150" class="opacity-slider">
+            </div>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <button class="button secondary" onclick="clearAllLayers()">Clear All</button>
+            <button class="button" onclick="showAllLayers()">Show All</button>
+        </div>
+
+        <div class="preset-views">
+            <div class="preset-button" onclick="loadPreset('security')">Security Audit</div>
+            <div class="preset-button" onclick="loadPreset('developer')">Developer View</div>
+            <div class="preset-button" onclick="loadPreset('infrastructure')">Infrastructure</div>
+            <div class="preset-button" onclick="loadPreset('fullstack')">Full Stack</div>
+        </div>
+
+        <div class="legend">
+            <h4 style="font-size: 14px; margin-bottom: 10px;">Connection Types</h4>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #3b82f6;"></div>
+                <span>Parent-Child</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #10b981;"></div>
+                <span>Data Flow</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #f97316;"></div>
+                <span>Dependency</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #8b5cf6;"></div>
+                <span>Authentication</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #dc2626;"></div>
+                <span>Threat Path</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Demo Controls Panel -->
+    <div id="demo-controls" class="control-panel">
+        <h3>🎮 Demo Scenarios</h3>
+        <button class="scenario-button" onclick="runScenario('cve')">
+            <strong>CVE Impact Analysis</strong><br>
+            <small>Trace CVE-2023-12345 through layers</small>
+        </button>
+        <button class="scenario-button" onclick="runScenario('breach')">
+            <strong>Runtime Breach</strong><br>
+            <small>Kubernetes pod compromise</small>
+        </button>
+        <button class="scenario-button" onclick="runScenario('build')">
+            <strong>Progressive Build</strong><br>
+            <small>Build the complete picture</small>
+        </button>
+        <button class="scenario-button danger" onclick="runScenario('threat')">
+            <strong>Threat Simulation</strong><br>
+            <small>Activate threat propagation</small>
+        </button>
+
+        <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(226, 232, 240, 1);">
+            <h3 style="font-size: 18px; margin-bottom: 12px;">📈 System Overview</h3>
+            <div class="info-item">
+                <span class="info-label">Active Layers:</span>
+                <span class="info-value" id="active-layers">0 / 10</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Total Nodes:</span>
+                <span class="info-value" id="total-nodes">0</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Connections:</span>
+                <span class="info-value" id="total-connections">0</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Threat Level:</span>
+                <span class="info-value" id="threat-level">
+                    Normal <span class="threat-indicator threat-low"></span>
+                </span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Selected Node:</span>
+                <span class="info-value" id="selected-node">None</span>
+            </div>
+            
+            <div id="node-details" style="margin-top: 15px; display: none;">
+                <h4 style="font-size: 14px; margin-bottom: 8px;">Node Details</h4>
+                <div id="node-info"></div>
+            </div>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <div class="control-group">
+                <div class="control-label">Animation Speed</div>
+                <input type="range" id="speed-slider" min="0.5" max="3" value="1" step="0.5" class="opacity-slider">
+            </div>
+        </div>
+
+        <div style="margin-top: 10px;">
+            <button class="button secondary" onclick="resetCamera()">Reset View</button>
+            <button class="button secondary" onclick="toggleRotation()">Auto-Rotate</button>
+        </div>
+        
+        <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(226, 232, 240, 1);">
+            <h4 style="font-size: 14px; margin-bottom: 10px; color: #64748b;">Camera Controls</h4>
+            <div style="display: flex; gap: 5px; margin-bottom: 10px;">
+                <button class="button secondary" style="flex: 1; font-size: 20px; padding: 15px;" onclick="moveCamera('up')">↑</button>
+                <button class="button secondary" style="flex: 1; font-size: 20px; padding: 15px;" onclick="moveCamera('down')">↓</button>
+            </div>
+            <div style="display: flex; gap: 5px;">
+                <button class="button secondary" style="flex: 1;" onclick="zoomCamera('in')">
+                    <span style="font-size: 16px;">+</span> Zoom In
+                </button>
+                <button class="button secondary" style="flex: 1;" onclick="zoomCamera('out')">
+                    <span style="font-size: 16px;">−</span> Zoom Out
+                </button>
+            </div>
+        </div>
+        
+        <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(226, 232, 240, 1);">
+            <h4 style="font-size: 14px; margin-bottom: 10px; color: #64748b;">Controls</h4>
+            <div style="font-size: 12px; color: #94a3b8; line-height: 1.6;">
+                <div>🖱️ <strong>Click + Drag:</strong> Rotate view</div>
+                <div>🖱️ <strong>Double-click:</strong> Select node</div>
+                <div>⚲ <strong>Mouse wheel:</strong> Zoom in/out</div>
+                <div>🔘 <strong>Up/Down buttons:</strong> Move view up/down</div>
+                <div>⌨️ <strong>Arrow keys:</strong> Rotate view</div>
+                <div>⌨️ <strong>T:</strong> Top view | <strong>F:</strong> Front view | <strong>S:</strong> Side view</div>
+                <div>⌨️ <strong>+/-:</strong> Zoom in/out</div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <script>
+        // Global variables
+        let scene, camera, renderer;
+        let layers = {};
+        let connections = [];
+        let raycaster, mouse;
+        let selectedObject = null;
+        let autoRotate = false;
+        let animationSpeed = 1;
+
+        // Layer definitions
+        const layerConfig = [
+            { id: 'business', name: 'Business Functions', color: 0x1e3a8a, height: 9 },
+            { id: 'application', name: 'Applications', color: 0x6b21a8, height: 8 },
+            { id: 'component', name: 'Components', color: 0xbe185d, height: 7 },
+            { id: 'package', name: 'Packages', color: 0xea580c, height: 6 },
+            { id: 'class', name: 'Classes', color: 0xdc2626, height: 5 },
+            { id: 'method', name: 'Methods', color: 0xca8a04, height: 4 },
+            { id: 'code', name: 'Source Code', color: 0x84cc16, height: 3 },
+            { id: 'environment', name: 'Environment', color: 0x16a34a, height: 2 },
+            { id: 'runtime', name: 'Runtime', color: 0x0891b2, height: 1 },
+            { id: 'compute', name: 'Compute', color: 0x2563eb, height: 0 }
+        ];
+
+        // Sample data structure
+        const graphData = {
+            business: {
+                nodes: [
+                    { id: 'bf1', name: 'Payment Processing', x: 0, z: 0, risk: 'high' },
+                    { id: 'bf2', name: 'User Authentication', x: 400, z: 0, risk: 'critical' },
+                    { id: 'bf3', name: 'Order Fulfillment', x: -400, z: 0, risk: 'medium' },
+                    { id: 'bf4', name: 'Customer Data', x: 0, z: 400, risk: 'high' }
+                ]
+            },
+            application: {
+                nodes: [
+                    { id: 'app1', name: 'PaymentService API', x: 0, z: 0, parent: 'bf1' },
+                    { id: 'app2', name: 'AuthService', x: 400, z: 0, parent: 'bf2' },
+                    { id: 'app3', name: 'OrderManagement', x: -400, z: 0, parent: 'bf3' },
+                    { id: 'app4', name: 'CustomerPortal', x: 0, z: 400, parent: 'bf4' },
+                    { id: 'app5', name: 'NotificationService', x: 200, z: 200 }
+                ]
+            },
+            component: {
+                nodes: [
+                    { id: 'comp1', name: 'Payment Gateway', x: -100, z: -100, parent: 'app1' },
+                    { id: 'comp2', name: 'Transaction Validator', x: 100, z: -100, parent: 'app1' },
+                    { id: 'comp3', name: 'Fraud Detector', x: 0, z: 100, parent: 'app1' },
+                    { id: 'comp4', name: 'Auth Token Manager', x: 360, z: -40, parent: 'app2' },
+                    { id: 'comp5', name: 'Session Handler', x: 440, z: 40, parent: 'app2' },
+                    { id: 'comp6', name: 'Order Processor', x: -440, z: -40, parent: 'app3' },
+                    { id: 'comp7', name: 'Inventory Manager', x: -360, z: 40, parent: 'app3' }
+                ]
+            },
+            package: {
+                nodes: [
+                    { id: 'pkg1', name: 'stripe-python 5.1.0', x: -100, z: -160, parent: 'comp1', type: 'external', vulnerable: true },
+                    { id: 'pkg2', name: 'cryptography 41.0.5', x: 100, z: -160, parent: 'comp2', type: 'external' },
+                    { id: 'pkg3', name: 'payment-core', x: 0, z: 40, parent: 'comp1', type: 'internal' },
+                    { id: 'pkg4', name: 'requests 2.31.0', x: -200, z: 0, type: 'external' },
+                    { id: 'pkg5', name: 'pydantic 2.4.2', x: 200, z: 0, type: 'external' },
+                    { id: 'pkg6', name: 'jwt-auth', x: 360, z: -80, parent: 'comp4', type: 'internal' },
+                    { id: 'pkg7', name: 'redis-py', x: 440, z: 80, parent: 'comp5', type: 'external' }
+                ]
+            },
+            class: {
+                nodes: [
+                    { id: 'cls1', name: 'PaymentProcessor', x: -60, z: -60, parent: 'pkg3' },
+                    { id: 'cls2', name: 'CardValidator', x: 60, z: -60, parent: 'pkg3' },
+                    { id: 'cls3', name: 'FraudDetector', x: 0, z: 60, parent: 'pkg3' },
+                    { id: 'cls4', name: 'PaymentRequest', x: -120, z: 0, parent: 'pkg3' },
+                    { id: 'cls5', name: 'PaymentResponse', x: 120, z: 0, parent: 'pkg3' },
+                    { id: 'cls6', name: 'TokenManager', x: 360, z: -120, parent: 'pkg6' }
+                ]
+            },
+            method: {
+                nodes: [
+                    { id: 'mth1', name: 'process_payment()', x: -60, z: -100, parent: 'cls1' },
+                    { id: 'mth2', name: 'validate_card_details()', x: 60, z: -100, parent: 'cls2' },
+                    { id: 'mth3', name: 'check_fraud_score()', x: 0, z: 100, parent: 'cls3' },
+                    { id: 'mth4', name: 'encrypt_sensitive_data()', x: -100, z: 0, parent: 'cls1' },
+                    { id: 'mth5', name: 'call_payment_gateway()', x: 100, z: 0, parent: 'cls1' },
+                    { id: 'mth6', name: 'generate_token()', x: 360, z: -160, parent: 'cls6' }
+                ]
+            },
+            code: {
+                nodes: [
+                    { id: 'code1', name: 'Line 142: tokenize()', x: -60, z: -140, parent: 'mth1', line: 142 },
+                    { id: 'code2', name: 'Line 145: calculate_risk()', x: 0, z: -140, parent: 'mth1', line: 145 },
+                    { id: 'code3', name: 'Line 148: fraud_check', x: 60, z: -140, parent: 'mth1', line: 148 },
+                    { id: 'code4', name: 'Line 152: encrypt_data()', x: -100, z: -40, parent: 'mth4', line: 152 },
+                    { id: 'code5', name: 'Line 156: gateway.charge()', x: 100, z: -40, parent: 'mth5', line: 156 },
+                    { id: 'code6', name: 'Line 160: audit_log()', x: 0, z: 40, parent: 'mth1', line: 160 }
+                ]
+            },
+            environment: {
+                nodes: [
+                    { id: 'env1', name: 'Python 3.11.5', x: -200, z: -200, type: 'python' },
+                    { id: 'env2', name: 'Node.js 20.9.0', x: 200, z: -200, type: 'nodejs' },
+                    { id: 'env3', name: 'Java 17', x: -200, z: 200, type: 'java' },
+                    { id: 'env4', name: 'Go 1.21', x: 200, z: 200, type: 'go' }
+                ]
+            },
+            runtime: {
+                nodes: [
+                    { id: 'rt1', name: 'Lambda-Payment', x: 0, z: 0, type: 'lambda' },
+                    { id: 'rt2', name: 'K8s-Auth-Pod', x: 400, z: 0, type: 'kubernetes', compromised: true },
+                    { id: 'rt3', name: 'Container-Orders', x: -400, z: 0, type: 'container' },
+                    { id: 'rt4', name: 'CloudRun-Notify', x: 200, z: 200, type: 'cloudrun' }
+                ]
+            },
+            compute: {
+                nodes: [
+                    { id: 'cmp1', name: 'AWS us-east-1', x: -200, z: 0, type: 'aws' },
+                    { id: 'cmp2', name: 'AWS eu-west-1', x: 200, z: 0, type: 'aws' },
+                    { id: 'cmp3', name: 'GKE prod-cluster', x: 400, z: 200, type: 'gcp' },
+                    { id: 'cmp4', name: 'Azure AKS', x: -400, z: 200, type: 'azure' }
+                ]
+            }
+        };
+
+        // Initialize Three.js
+        function init() {
+            // Scene setup
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xf8f9fa);
+            scene.fog = new THREE.Fog(0xf8f9fa, 1000, 2000);
+
+            // Camera setup
+            camera = new THREE.PerspectiveCamera(
+                75,
+                window.innerWidth / window.innerHeight,
+                0.1,
+                5000
+            );
+            camera.position.set(600, 800, 1000);  // Increased from 300, 400, 500
+            camera.lookAt(0, 450, 0);  // Lowered to better frame both layers
+
+            // Renderer setup
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(200, 400, 100);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.camera.near = 0.1;
+            directionalLight.shadow.camera.far = 1500;
+            directionalLight.shadow.camera.left = -500;
+            directionalLight.shadow.camera.right = 500;
+            directionalLight.shadow.camera.top = 500;
+            directionalLight.shadow.camera.bottom = -500;
+            scene.add(directionalLight);
+
+            // Add a subtle point light for better depth
+            const pointLight = new THREE.PointLight(0x00d9ff, 0.3, 1000);
+            pointLight.position.set(0, 600, 0);
+            scene.add(pointLight);
+
+            // Raycaster for mouse interaction
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+
+            // Add event listeners
+            window.addEventListener('resize', onWindowResize);
+            renderer.domElement.addEventListener('mousemove', onMouseMove);
+            renderer.domElement.addEventListener('dblclick', onDoubleClick);
+            renderer.domElement.addEventListener('mouseleave', () => {
+                document.body.style.cursor = 'default';
+            });
+
+            // Mouse controls
+            addMouseControls();
+
+            // Initialize layers
+            initializeLayers();
+
+            // Create UI
+            createLayerToggles();
+            
+            // Initialize camera center based on default spacing
+            const defaultSpacing = 150;
+            window.cameraLookAtY = 450;  // Set to a lower value to better frame the visualization
+
+            // Hide loading
+            document.getElementById('loading').style.display = 'none';
+
+            // Start animation loop
+            animate();
+        }
+
+        // Initialize layer structures
+        function initializeLayers() {
+            layerConfig.forEach(config => {
+                layers[config.id] = {
+                    config: config,
+                    group: new THREE.Group(),
+                    nodes: [],
+                    visible: false,
+                    opacity: 1
+                };
+                layers[config.id].group.visible = false;
+                scene.add(layers[config.id].group);
+            });
+            
+            // Show only the business layer by default
+            setTimeout(() => {
+                document.getElementById('toggle-business').checked = true;
+                toggleLayer('business');
+                // Also show applications layer by default
+                document.getElementById('toggle-application').checked = true;
+                toggleLayer('application');
+            }, 100);
+        }
+
+        // Create layer toggle UI
+        function createLayerToggles() {
+            const container = document.getElementById('layer-toggles');
+            
+            layerConfig.forEach(config => {
+                const toggle = document.createElement('div');
+                toggle.className = 'layer-toggle';
+                
+                const nodeCount = graphData[config.id] ? graphData[config.id].nodes.length : 0;
+                
+                // Convert hex color to RGB for CSS
+                const r = (config.color >> 16) & 255;
+                const g = (config.color >> 8) & 255;
+                const b = config.color & 255;
+                const colorRGB = `rgb(${r}, ${g}, ${b})`;
+                
+                toggle.innerHTML = `
+                    <div class="layer-checkbox">
+                        <div class="layer-color-indicator" style="background-color: ${colorRGB};"></div>
+                        <input type="checkbox" id="toggle-${config.id}" onchange="toggleLayer('${config.id}')">
+                        <label for="toggle-${config.id}" class="layer-name">${config.name}</label>
+                        <span class="node-count">${nodeCount}</span>
+                    </div>
+                `;
+                
+                container.appendChild(toggle);
+            });
+        }
+
+        // Toggle layer visibility
+        function toggleLayer(layerId) {
+            const layer = layers[layerId];
+            const checkbox = document.getElementById(`toggle-${layerId}`);
+            
+            if (checkbox.checked) {
+                if (layer.nodes.length === 0) {
+                    createLayerNodes(layerId);
+                }
+                showLayer(layerId);
+            } else {
+                hideLayer(layerId);
+            }
+            
+            updateStats();
+        }
+
+        // Create nodes for a layer
+        function createLayerNodes(layerId) {
+            const layer = layers[layerId];
+            const data = graphData[layerId];
+            
+            if (!data || !data.nodes) return;
+            
+            // Get current spacing from slider, default to 50
+            const spacingSlider = document.getElementById('spacing-slider');
+            const spacing = spacingSlider ? parseFloat(spacingSlider.value) : 150;
+            const layerY = layer.config.height * spacing;
+            
+            data.nodes.forEach(nodeData => {
+                // Create node geometry
+                const geometry = new THREE.SphereGeometry(30, 32, 32);
+                const material = new THREE.MeshPhongMaterial({
+                    color: layer.config.color,
+                    emissive: layer.config.color,
+                    emissiveIntensity: 0.3,
+                    transparent: true,
+                    opacity: 0.9,
+                    shininess: 100
+                });
+                
+                // Special styling for vulnerable or compromised nodes
+                if (nodeData.vulnerable) {
+                    material.color = new THREE.Color(0xf97316);  // Orange for vulnerable
+                    material.emissive = new THREE.Color(0xf97316);
+                    material.emissiveIntensity = 0.5;
+                }
+                if (nodeData.compromised) {
+                    material.color = new THREE.Color(0xdc2626);  // Red for compromised
+                    material.emissive = new THREE.Color(0xdc2626);
+                    material.emissiveIntensity = 0.7;
+                }
+                
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.position.set(nodeData.x || 0, layerY, nodeData.z || 0);
+                mesh.userData = {
+                    ...nodeData,
+                    layer: layerId,
+                    originalColor: material.color.clone()
+                };
+                
+                // Add a subtle glow effect
+                const glowGeometry = new THREE.SphereGeometry(35, 16, 16);
+                const glowMaterial = new THREE.MeshBasicMaterial({
+                    color: layer.config.color,
+                    transparent: true,
+                    opacity: 0.15
+                });
+                const glowMesh = new THREE.Mesh(glowGeometry, glowMaterial);
+                mesh.add(glowMesh);
+                
+                layer.group.add(mesh);
+                layer.nodes.push(mesh);
+                
+                // Create label
+                createLabel(mesh, nodeData.name);
+            });
+            
+            // Create connections
+            createConnections(layerId);
+            
+            // Create cross-layer connections if needed
+            createCrossLayerConnections(layerId);
+        }
+
+        // Create text label for node
+        function createLabel(mesh, text) {
+            // Create canvas for text
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = 1024;  // Doubled from 512
+            canvas.height = 256; // Doubled from 128
+            
+            // Clear canvas
+            context.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Configure text
+            context.font = 'bold 48px Arial';  // Much larger font
+            context.fillStyle = '#1e293b';
+            context.textAlign = 'center';
+            context.textBaseline = 'middle';
+            
+            // Measure text to determine background size
+            const metrics = context.measureText(text);
+            const textWidth = metrics.width;
+            const padding = 32;  // Doubled padding
+            const bgWidth = Math.min(textWidth + padding * 2, canvas.width - 40);
+            const bgHeight = 80;  // Doubled height
+            
+            // Draw background with rounded corners
+            const bgX = (canvas.width - bgWidth) / 2;
+            const bgY = (canvas.height - bgHeight) / 2;
+            const radius = 16;
+            
+            context.fillStyle = 'rgba(255, 255, 255, 0.95)';
+            context.beginPath();
+            context.moveTo(bgX + radius, bgY);
+            context.lineTo(bgX + bgWidth - radius, bgY);
+            context.quadraticCurveTo(bgX + bgWidth, bgY, bgX + bgWidth, bgY + radius);
+            context.lineTo(bgX + bgWidth, bgY + bgHeight - radius);
+            context.quadraticCurveTo(bgX + bgWidth, bgY + bgHeight, bgX + bgWidth - radius, bgY + bgHeight);
+            context.lineTo(bgX + radius, bgY + bgHeight);
+            context.quadraticCurveTo(bgX, bgY + bgHeight, bgX, bgY + bgHeight - radius);
+            context.lineTo(bgX, bgY + radius);
+            context.quadraticCurveTo(bgX, bgY, bgX + radius, bgY);
+            context.closePath();
+            context.fill();
+            
+            // Draw border
+            context.strokeStyle = 'rgba(226, 232, 240, 1)';
+            context.lineWidth = 3;
+            context.stroke();
+            
+            // Draw text with better contrast
+            context.fillStyle = '#1e293b';
+            context.font = 'bold 48px Arial';
+            
+            // Handle long text by wrapping or truncating
+            if (textWidth > bgWidth - padding * 2) {
+                // Truncate with ellipsis
+                let truncatedText = text;
+                let truncatedWidth = textWidth;
+                while (truncatedWidth > bgWidth - padding * 2 - 40 && truncatedText.length > 0) {
+                    truncatedText = truncatedText.slice(0, -1);
+                    truncatedWidth = context.measureText(truncatedText + '...').width;
+                }
+                context.fillText(truncatedText + '...', canvas.width / 2, canvas.height / 2);
+            } else {
+                context.fillText(text, canvas.width / 2, canvas.height / 2);
+            }
+            
+            // Create texture from canvas
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.needsUpdate = true;
+            
+            // Create sprite
+            const spriteMaterial = new THREE.SpriteMaterial({ 
+                map: texture,
+                transparent: true
+            });
+            const sprite = new THREE.Sprite(spriteMaterial);
+            
+            // Scale and position sprite - make it much larger
+            sprite.scale.set(300, 75, 1);  // Doubled from 150, 37.5
+            sprite.position.set(0, 70, 0);   // Adjusted position higher
+            
+            // Add to mesh
+            mesh.add(sprite);
+        }
+
+        // Create connections between nodes
+        function createConnections(layerId) {
+            const currentLayer = layers[layerId];
+            const data = graphData[layerId];
+            
+            if (!data || !data.nodes) return;
+            
+            // Connect to parent nodes in layer above
+            const layerIndex = layerConfig.findIndex(l => l.id === layerId);
+            if (layerIndex > 0) {
+                const parentLayerId = layerConfig[layerIndex - 1].id;
+                const parentLayer = layers[parentLayerId];
+                
+                if (parentLayer.nodes.length > 0) {
+                    data.nodes.forEach((nodeData, i) => {
+                        if (nodeData.parent) {
+                            const currentNode = currentLayer.nodes[i];
+                            const parentNode = parentLayer.nodes.find(n => n.userData.id === nodeData.parent);
+                            
+                            if (parentNode) {
+                                createConnection(parentNode, currentNode, 'parent');
+                            }
+                        }
+                    });
+                }
+            }
+            
+            // Create intra-layer connections based on layer type
+            switch(layerId) {
+                case 'business':
+                    // Business functions interact with each other
+                    const paymentBF = currentLayer.nodes.find(n => n.userData.id === 'bf1');
+                    const authBF = currentLayer.nodes.find(n => n.userData.id === 'bf2');
+                    const orderBF = currentLayer.nodes.find(n => n.userData.id === 'bf3');
+                    const customerBF = currentLayer.nodes.find(n => n.userData.id === 'bf4');
+                    
+                    if (paymentBF && authBF) createConnection(paymentBF, authBF, 'authenticates');
+                    if (orderBF && paymentBF) createConnection(orderBF, paymentBF, 'data-flow');
+                    if (customerBF && authBF) createConnection(customerBF, authBF, 'data-flow');
+                    break;
+                    
+                case 'application':
+                    // Service-to-service communications
+                    const paymentApp = currentLayer.nodes.find(n => n.userData.id === 'app1');
+                    const authApp = currentLayer.nodes.find(n => n.userData.id === 'app2');
+                    const orderApp = currentLayer.nodes.find(n => n.userData.id === 'app3');
+                    const notifyApp = currentLayer.nodes.find(n => n.userData.id === 'app5');
+                    
+                    if (paymentApp && authApp) createConnection(paymentApp, authApp, 'authenticates');
+                    if (orderApp && paymentApp) createConnection(orderApp, paymentApp, 'data-flow');
+                    if (notifyApp && orderApp) createConnection(orderApp, notifyApp, 'data-flow');
+                    if (notifyApp && paymentApp) createConnection(paymentApp, notifyApp, 'data-flow');
+                    break;
+                    
+                case 'component':
+                    // Component dependencies within applications
+                    const gateway = currentLayer.nodes.find(n => n.userData.id === 'comp1');
+                    const validator = currentLayer.nodes.find(n => n.userData.id === 'comp2');
+                    const fraudDetector = currentLayer.nodes.find(n => n.userData.id === 'comp3');
+                    const tokenManager = currentLayer.nodes.find(n => n.userData.id === 'comp4');
+                    const sessionHandler = currentLayer.nodes.find(n => n.userData.id === 'comp5');
+                    
+                    if (gateway && validator) createConnection(gateway, validator, 'data-flow');
+                    if (validator && fraudDetector) createConnection(validator, fraudDetector, 'data-flow');
+                    if (tokenManager && sessionHandler) createConnection(tokenManager, sessionHandler, 'dependency');
+                    break;
+                    
+                case 'package':
+                    // Package dependencies
+                    const stripePkg = currentLayer.nodes.find(n => n.userData.id === 'pkg1');
+                    const cryptoPkg = currentLayer.nodes.find(n => n.userData.id === 'pkg2');
+                    const paymentCore = currentLayer.nodes.find(n => n.userData.id === 'pkg3');
+                    const requestsPkg = currentLayer.nodes.find(n => n.userData.id === 'pkg4');
+                    const pydanticPkg = currentLayer.nodes.find(n => n.userData.id === 'pkg5');
+                    
+                    // All packages might depend on requests for HTTP
+                    if (requestsPkg) {
+                        [stripePkg, paymentCore].forEach(pkg => {
+                            if (pkg) createConnection(pkg, requestsPkg, 'dependency');
+                        });
+                    }
+                    
+                    // Payment core depends on crypto for encryption
+                    if (paymentCore && cryptoPkg) createConnection(paymentCore, cryptoPkg, 'dependency');
+                    
+                    // Stripe package depends on pydantic for validation
+                    if (stripePkg && pydanticPkg) createConnection(stripePkg, pydanticPkg, 'dependency');
+                    break;
+                    
+                case 'class':
+                    // Class relationships (inheritance, composition)
+                    const processor = currentLayer.nodes.find(n => n.userData.id === 'cls1');
+                    const cardValidator = currentLayer.nodes.find(n => n.userData.id === 'cls2');
+                    const fraudClass = currentLayer.nodes.find(n => n.userData.id === 'cls3');
+                    const request = currentLayer.nodes.find(n => n.userData.id === 'cls4');
+                    const response = currentLayer.nodes.find(n => n.userData.id === 'cls5');
+                    
+                    if (processor && cardValidator) createConnection(processor, cardValidator, 'dependency');
+                    if (processor && fraudClass) createConnection(processor, fraudClass, 'dependency');
+                    if (processor && request) createConnection(processor, request, 'data-flow');
+                    if (processor && response) createConnection(processor, response, 'data-flow');
+                    break;
+                    
+                case 'method':
+                    // Method calls
+                    const processPayment = currentLayer.nodes.find(n => n.userData.id === 'mth1');
+                    const validateCard = currentLayer.nodes.find(n => n.userData.id === 'mth2');
+                    const checkFraud = currentLayer.nodes.find(n => n.userData.id === 'mth3');
+                    const encryptData = currentLayer.nodes.find(n => n.userData.id === 'mth4');
+                    const callGateway = currentLayer.nodes.find(n => n.userData.id === 'mth5');
+                    
+                    if (processPayment) {
+                        if (validateCard) createConnection(processPayment, validateCard, 'data-flow');
+                        if (checkFraud) createConnection(processPayment, checkFraud, 'data-flow');
+                        if (encryptData) createConnection(processPayment, encryptData, 'data-flow');
+                        if (callGateway) createConnection(processPayment, callGateway, 'data-flow');
+                    }
+                    break;
+                    
+                case 'runtime':
+                    // Runtime communications
+                    const lambda = currentLayer.nodes.find(n => n.userData.id === 'rt1');
+                    const k8sPod = currentLayer.nodes.find(n => n.userData.id === 'rt2');
+                    const container = currentLayer.nodes.find(n => n.userData.id === 'rt3');
+                    const cloudRun = currentLayer.nodes.find(n => n.userData.id === 'rt4');
+                    
+                    // Lambda invokes other services
+                    if (lambda && k8sPod) createConnection(lambda, k8sPod, 'data-flow');
+                    if (container && cloudRun) createConnection(container, cloudRun, 'data-flow');
+                    break;
+                    
+                case 'compute':
+                    // Cross-region replication and failover
+                    const usEast = currentLayer.nodes.find(n => n.userData.id === 'cmp1');
+                    const euWest = currentLayer.nodes.find(n => n.userData.id === 'cmp2');
+                    const gke = currentLayer.nodes.find(n => n.userData.id === 'cmp3');
+                    
+                    // Cross-region replication
+                    if (usEast && euWest) createConnection(usEast, euWest, 'dependency');
+                    break;
+            }
+        }
+
+        // Create cross-layer connections (e.g., code -> environment -> runtime -> compute)
+        function createCrossLayerConnections(layerId) {
+            // Only create cross-layer connections when certain layers are shown
+            switch(layerId) {
+                case 'environment':
+                    // Connect code to environments it executes in
+                    if (layers.code && layers.code.visible) {
+                        const pythonEnv = layers.environment.nodes.find(n => n.userData.id === 'env1');
+                        const nodeEnv = layers.environment.nodes.find(n => n.userData.id === 'env2');
+                        
+                        // Python code runs in Python environment
+                        layers.code.nodes.forEach(codeNode => {
+                            if (codeNode.userData.name.includes('tokenize') || 
+                                codeNode.userData.name.includes('encrypt')) {
+                                if (pythonEnv) createConnection(codeNode, pythonEnv, 'dependency');
+                            }
+                        });
+                    }
+                    break;
+                    
+                case 'runtime':
+                    // Connect environments to runtimes
+                    if (layers.environment && layers.environment.visible) {
+                        const lambda = layers.runtime.nodes.find(n => n.userData.id === 'rt1');
+                        const k8s = layers.runtime.nodes.find(n => n.userData.id === 'rt2');
+                        const pythonEnv = layers.environment.nodes.find(n => n.userData.id === 'env1');
+                        const nodeEnv = layers.environment.nodes.find(n => n.userData.id === 'env2');
+                        
+                        if (pythonEnv && lambda) createConnection(pythonEnv, lambda, 'data-flow');
+                        if (nodeEnv && k8s) createConnection(nodeEnv, k8s, 'data-flow');
+                    }
+                    break;
+                    
+                case 'compute':
+                    // Connect runtimes to compute resources
+                    if (layers.runtime && layers.runtime.visible) {
+                        const aws1 = layers.compute.nodes.find(n => n.userData.id === 'cmp1');
+                        const aws2 = layers.compute.nodes.find(n => n.userData.id === 'cmp2');
+                        const gke = layers.compute.nodes.find(n => n.userData.id === 'cmp3');
+                        const lambda = layers.runtime.nodes.find(n => n.userData.id === 'rt1');
+                        const k8s = layers.runtime.nodes.find(n => n.userData.id === 'rt2');
+                        const container = layers.runtime.nodes.find(n => n.userData.id === 'rt3');
+                        
+                        if (lambda && aws1) createConnection(lambda, aws1, 'dependency');
+                        if (k8s && gke) createConnection(k8s, gke, 'dependency');
+                        if (container && aws2) createConnection(container, aws2, 'dependency');
+                    }
+                    break;
+            }
+        }
+
+        // Create a single connection line
+        function createConnection(startNode, endNode, type = 'parent') {
+            const points = [];
+            points.push(startNode.position);
+            points.push(endNode.position);
+            
+            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+            
+            // Create a thicker line using a cylinder for better visibility
+            const direction = new THREE.Vector3().subVectors(endNode.position, startNode.position);
+            const distance = direction.length();
+            direction.normalize();
+            
+            const origin = new THREE.Vector3().addVectors(startNode.position, endNode.position).multiplyScalar(0.5);
+            
+            // Create cylinder geometry for thick line
+            let radius, color;
+            switch(type) {
+                case 'threat':
+                    radius = 4;
+                    color = 0xdc2626;
+                    break;
+                case 'dependency':
+                    radius = 3;
+                    color = 0xf97316;
+                    break;
+                case 'data-flow':
+                    radius = 3;
+                    color = 0x10b981;
+                    break;
+                case 'authenticates':
+                    radius = 3;
+                    color = 0x8b5cf6;
+                    break;
+                default:
+                    radius = 3.5;
+                    color = 0x3b82f6;
+            }
+            
+            const cylinderGeometry = new THREE.CylinderGeometry(radius, radius, distance, 8);
+            const cylinderMaterial = new THREE.MeshPhongMaterial({
+                color: color,
+                emissive: color,
+                emissiveIntensity: 0.3,
+                transparent: true,
+                opacity: 0.8
+            });
+            
+            const cylinder = new THREE.Mesh(cylinderGeometry, cylinderMaterial);
+            cylinder.position.copy(origin);
+            
+            // Rotate cylinder to align with connection direction
+            const quaternion = new THREE.Quaternion();
+            const up = new THREE.Vector3(0, 1, 0);
+            quaternion.setFromUnitVectors(up, direction);
+            cylinder.quaternion.copy(quaternion);
+            
+            cylinder.userData = {
+                type: type,
+                start: startNode,
+                end: endNode,
+                isCylinder: true
+            };
+            
+            connections.push(cylinder);
+            scene.add(cylinder);
+            
+            // Create arrow head
+            const arrowRadius = radius * 2.5;
+            const arrowHeight = 20;
+            const arrowGeometry = new THREE.ConeGeometry(arrowRadius, arrowHeight, 8);
+            const arrowMaterial = new THREE.MeshPhongMaterial({
+                color: color,
+                emissive: color,
+                emissiveIntensity: 0.3,
+                transparent: true,
+                opacity: 0.9
+            });
+            
+            const arrow = new THREE.Mesh(arrowGeometry, arrowMaterial);
+            
+            // Position arrow at the end of the connection, slightly before the target node
+            const arrowOffset = 35; // Distance from target node center
+            const arrowPosition = new THREE.Vector3().copy(endNode.position).sub(
+                direction.clone().multiplyScalar(arrowOffset)
+            );
+            arrow.position.copy(arrowPosition);
+            
+            // Rotate arrow to point in the right direction
+            arrow.quaternion.copy(quaternion);
+            
+            arrow.userData = {
+                type: 'arrow',
+                connection: cylinder,
+                isArrow: true
+            };
+            
+            connections.push(arrow);
+            scene.add(arrow);
+        }
+
+        // Show layer with animation
+        function showLayer(layerId) {
+            const layer = layers[layerId];
+            layer.visible = true;
+            layer.group.visible = true;
+            
+            // Animate nodes appearing
+            layer.nodes.forEach((node, i) => {
+                node.scale.set(0, 0, 0);
+                new TWEEN.Tween(node.scale)
+                    .to({ x: 1, y: 1, z: 1 }, 500 * animationSpeed)
+                    .delay(i * 50)
+                    .easing(TWEEN.Easing.Elastic.Out)
+                    .start();
+            });
+            
+            // Show connections after nodes appear
+            setTimeout(() => {
+                updateAllConnections();
+            }, 300 * animationSpeed);
+        }
+
+        // Hide layer with animation
+        function hideLayer(layerId) {
+            const layer = layers[layerId];
+            
+            layer.nodes.forEach((node, i) => {
+                new TWEEN.Tween(node.scale)
+                    .to({ x: 0, y: 0, z: 0 }, 300 * animationSpeed)
+                    .delay(i * 30)
+                    .easing(TWEEN.Easing.Cubic.In)
+                    .onComplete(() => {
+                        if (i === layer.nodes.length - 1) {
+                            layer.visible = false;
+                            layer.group.visible = false;
+                            updateAllConnections();
+                        }
+                    })
+                    .start();
+            });
+        }
+
+        // Update all connection visibility
+        function updateAllConnections() {
+            connections.forEach(connection => {
+                if (connection.userData.isCylinder) {
+                    const startLayer = layers[connection.userData.start.userData.layer];
+                    const endLayer = layers[connection.userData.end.userData.layer];
+                    
+                    connection.visible = startLayer.visible && endLayer.visible;
+                } else if (connection.userData.isArrow) {
+                    // Arrow visibility follows its cylinder
+                    const cylinder = connections.find(c => c === connection.userData.connection);
+                    if (cylinder) {
+                        connection.visible = cylinder.visible;
+                    }
+                }
+            });
+        }
+
+        // Update layer opacity
+        function updateLayerOpacity(layerId, opacity) {
+            const layer = layers[layerId];
+            layer.opacity = parseFloat(opacity);
+            
+            layer.nodes.forEach(node => {
+                node.material.opacity = layer.opacity;
+            });
+        }
+
+        // Mouse controls
+        function addMouseControls() {
+            let isMouseDown = false;
+            let mouseX = 0, mouseY = 0;
+            let targetRotationX = -0.5, targetRotationY = 0.1;  // Lowered Y rotation for better view
+            let rotationX = -0.5, rotationY = 0.1;  // Match initial values
+            let zoom = 1;
+            let targetZoom = 1;
+            
+            // Initialize window variable for camera vertical offset
+            window.cameraVerticalOffset = 400;  // Changed from 0 to 400 for better initial view
+            
+            const minZoom = 0.5;
+            const maxZoom = 3;
+            const rotationSpeed = 0.005;
+            const zoomSpeed = 0.1;
+            const dampingFactor = 0.05;
+            
+            // Mouse events
+            renderer.domElement.addEventListener('mousedown', (e) => { 
+                isMouseDown = true;
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+                document.body.style.cursor = 'grabbing';
+            });
+            
+            renderer.domElement.addEventListener('mouseup', () => { 
+                isMouseDown = false;
+                document.body.style.cursor = 'grab';
+            });
+            
+            renderer.domElement.addEventListener('mousemove', (event) => {
+                if (isMouseDown) {
+                    const deltaX = event.clientX - mouseX;
+                    const deltaY = event.clientY - mouseY;
+                    
+                    targetRotationX += deltaX * rotationSpeed;
+                    targetRotationY = Math.max(-Math.PI/2, Math.min(Math.PI/2, targetRotationY + deltaY * rotationSpeed));
+                    
+                    mouseX = event.clientX;
+                    mouseY = event.clientY;
+                }
+            });
+            
+            // Mouse wheel for zoom
+            renderer.domElement.addEventListener('wheel', (event) => {
+                event.preventDefault();
+                targetZoom = Math.max(minZoom, Math.min(maxZoom, targetZoom - event.deltaY * 0.001));
+            });
+            
+            // Touch events for mobile
+            let touchStartDistance = 0;
+            
+            renderer.domElement.addEventListener('touchstart', (event) => {
+                if (event.touches.length === 1) {
+                    isMouseDown = true;
+                    mouseX = event.touches[0].clientX;
+                    mouseY = event.touches[0].clientY;
+                } else if (event.touches.length === 2) {
+                    const dx = event.touches[0].clientX - event.touches[1].clientX;
+                    const dy = event.touches[0].clientY - event.touches[1].clientY;
+                    touchStartDistance = Math.sqrt(dx * dx + dy * dy);
+                }
+            });
+            
+            renderer.domElement.addEventListener('touchmove', (event) => {
+                event.preventDefault();
+                if (event.touches.length === 1 && isMouseDown) {
+                    const deltaX = event.touches[0].clientX - mouseX;
+                    const deltaY = event.touches[0].clientY - mouseY;
+                    
+                    targetRotationX += deltaX * rotationSpeed;
+                    targetRotationY = Math.max(-Math.PI/2, Math.min(Math.PI/2, targetRotationY + deltaY * rotationSpeed));
+                    
+                    mouseX = event.touches[0].clientX;
+                    mouseY = event.touches[0].clientY;
+                } else if (event.touches.length === 2) {
+                    const dx = event.touches[0].clientX - event.touches[1].clientX;
+                    const dy = event.touches[0].clientY - event.touches[1].clientY;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    targetZoom = Math.max(minZoom, Math.min(maxZoom, targetZoom * (distance / touchStartDistance)));
+                    touchStartDistance = distance;
+                }
+            });
+            
+            renderer.domElement.addEventListener('touchend', () => {
+                isMouseDown = false;
+            });
+            
+            // Update camera
+            function updateCamera() {
+                // Smooth rotation
+                rotationX += (targetRotationX - rotationX) * dampingFactor;
+                rotationY += (targetRotationY - rotationY) * dampingFactor;
+                
+                // Smooth zoom
+                zoom += (targetZoom - zoom) * dampingFactor;
+                
+                // Calculate camera position
+                const distance = 1200 / zoom;  // Increased from 800
+                const centerY = (window.cameraLookAtY || 450) + window.cameraVerticalOffset;  // Use window variable
+                
+                camera.position.x = distance * Math.sin(rotationX) * Math.cos(rotationY);
+                camera.position.y = centerY + distance * Math.sin(rotationY);
+                camera.position.z = distance * Math.cos(rotationX) * Math.cos(rotationY);
+                
+                camera.lookAt(0, centerY, 0);
+                
+                // Update auto-rotate if enabled
+                if (autoRotate) {
+                    targetRotationX += 0.005;
+                }
+            }
+            
+            // Add keyboard controls
+            document.addEventListener('keydown', (event) => {
+                switch(event.key) {
+                    case 'ArrowUp':
+                        targetRotationY = Math.min(Math.PI/2, targetRotationY + 0.1);
+                        break;
+                    case 'ArrowDown':
+                        targetRotationY = Math.max(-Math.PI/2, targetRotationY - 0.1);
+                        break;
+                    case 'ArrowLeft':
+                        targetRotationX -= 0.1;
+                        break;
+                    case 'ArrowRight':
+                        targetRotationX += 0.1;
+                        break;
+                    case '+':
+                    case '=':
+                        targetZoom = Math.min(maxZoom, targetZoom + zoomSpeed);
+                        break;
+                    case '-':
+                    case '_':
+                        targetZoom = Math.max(minZoom, targetZoom - zoomSpeed);
+                        break;
+                    case 't':
+                    case 'T':
+                        // Top-down view
+                        targetRotationY = Math.PI/2 - 0.01; // Slightly off vertical to avoid gimbal lock
+                        break;
+                    case 'f':
+                    case 'F':
+                        // Front view
+                        targetRotationX = 0;
+                        targetRotationY = 0;
+                        break;
+                    case 's':
+                    case 'S':
+                        // Side view
+                        targetRotationX = Math.PI/2;
+                        targetRotationY = 0;
+                        break;
+                }
+            });
+            
+            // Add to animation loop
+            window.updateCamera = updateCamera;
+            
+            // Expose control variables for other functions
+            window.targetRotationX = targetRotationX;
+            window.targetRotationY = targetRotationY;
+            window.targetZoom = targetZoom;
+            
+            // Update function to modify window variables
+            updateCamera.updateTargets = function(rotX, rotY, zoom) {
+                targetRotationX = rotX;
+                targetRotationY = rotY;
+                targetZoom = zoom;
+                // Update window variables too
+                window.targetRotationX = rotX;
+                window.targetRotationY = rotY;
+                window.targetZoom = zoom;
+            };
+        }
+
+        // Mouse interaction
+        function onMouseMove(event) {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            
+            // Highlight on hover
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(
+                Object.values(layers).flatMap(layer => layer.nodes)
+            );
+            
+            // Reset previous highlights
+            Object.values(layers).forEach(layer => {
+                layer.nodes.forEach(node => {
+                    if (node !== selectedObject) {
+                        node.material.emissive = node.userData.originalColor;
+                        node.material.emissiveIntensity = 0.3;
+                    }
+                });
+            });
+            
+            // Highlight hovered node and update cursor
+            if (intersects.length > 0) {
+                const object = intersects[0].object;
+                object.material.emissive = new THREE.Color(0xffffff);
+                object.material.emissiveIntensity = 0.5;
+                // Show different cursor to indicate double-click capability
+                document.body.style.cursor = 'pointer';
+            } else {
+                // Show grab cursor for rotation
+                document.body.style.cursor = 'grab';
+            }
+        }
+
+        function onDoubleClick(event) {
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(
+                Object.values(layers).flatMap(layer => layer.nodes)
+            );
+            
+            if (intersects.length > 0) {
+                selectNode(intersects[0].object);
+            }
+        }
+
+        // Select a node
+        function selectNode(node) {
+            // Update selected object
+            if (selectedObject) {
+                selectedObject.material.emissive = selectedObject.userData.originalColor;
+                selectedObject.material.emissiveIntensity = 0.3;
+            }
+            
+            selectedObject = node;
+            node.material.emissive = new THREE.Color(0xffffff);
+            node.material.emissiveIntensity = 0.8;
+            
+            // Update info panel
+            document.getElementById('selected-node').textContent = node.userData.name;
+            document.getElementById('node-details').style.display = 'block';
+            
+            const details = `
+                <div class="info-item">
+                    <span class="info-label">Layer:</span>
+                    <span class="info-value">${layers[node.userData.layer].config.name}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Type:</span>
+                    <span class="info-value">${node.userData.type || 'Standard'}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Risk Level:</span>
+                    <span class="info-value">${node.userData.risk || 'Low'}</span>
+                </div>
+                ${node.userData.vulnerable ? '<div class="info-item" style="color: #dc2626;">⚠️ Contains vulnerability: CVE-2023-12345</div>' : ''}
+                ${node.userData.compromised ? '<div class="info-item" style="color: #ef4444;">🚨 COMPROMISED</div>' : ''}
+            `;
+            
+            document.getElementById('node-info').innerHTML = details;
+            
+            // Highlight connected nodes
+            highlightConnections(node);
+        }
+
+        // Highlight all connections to/from a node
+        function highlightConnections(node) {
+            connections.forEach(connection => {
+                if (connection.userData.start === node || connection.userData.end === node) {
+                    connection.material.opacity = 1;
+                    connection.material.emissiveIntensity = 0.5;
+                } else {
+                    connection.material.opacity = 0.3;
+                    connection.material.emissiveIntensity = 0.1;
+                }
+            });
+        }
+
+        // Demo scenarios
+        function runScenario(scenario) {
+            switch(scenario) {
+                case 'cve':
+                    runCVEScenario();
+                    break;
+                case 'breach':
+                    runBreachScenario();
+                    break;
+                case 'build':
+                    runProgressiveBuild();
+                    break;
+                case 'threat':
+                    runThreatSimulation();
+                    break;
+            }
+        }
+
+        // CVE Impact Analysis scenario
+        function runCVEScenario() {
+            clearAllLayers();
+            
+            // Show layers in sequence
+            setTimeout(() => {
+                document.getElementById('toggle-package').checked = true;
+                toggleLayer('package');
+            }, 500);
+            
+            setTimeout(() => {
+                // Find and select vulnerable package
+                const vulnNode = layers.package.nodes.find(n => n.userData.vulnerable);
+                if (vulnNode) selectNode(vulnNode);
+            }, 1500);
+            
+            setTimeout(() => {
+                document.getElementById('toggle-component').checked = true;
+                toggleLayer('component');
+            }, 2500);
+            
+            setTimeout(() => {
+                document.getElementById('toggle-application').checked = true;
+                toggleLayer('application');
+            }, 3500);
+            
+            setTimeout(() => {
+                document.getElementById('toggle-business').checked = true;
+                toggleLayer('business');
+                
+                // Create threat paths
+                const vulnNode = layers.package.nodes.find(n => n.userData.vulnerable);
+                if (vulnNode) {
+                    createThreatPaths(vulnNode);
+                }
+            }, 4500);
+        }
+
+        // Create red threat propagation paths
+        function createThreatPaths(sourceNode) {
+            // Find affected nodes up the chain
+            const component = layers.component.nodes.find(n => n.userData.id === 'comp1');
+            const app = layers.application.nodes.find(n => n.userData.id === 'app1');
+            const business = layers.business.nodes.find(n => n.userData.id === 'bf1');
+            
+            if (component) createConnection(sourceNode, component, 'threat');
+            if (app && component) createConnection(component, app, 'threat');
+            if (business && app) createConnection(app, business, 'threat');
+            
+            // Update threat level
+            document.getElementById('threat-level').innerHTML = 
+                'Critical <span class="threat-indicator threat-critical"></span>';
+        }
+
+        // Progressive build scenario
+        function runProgressiveBuild() {
+            clearAllLayers();
+            
+            // Step 1: Start with business layer showing internal connections
+            setTimeout(() => {
+                document.getElementById(`toggle-business`).checked = true;
+                toggleLayer('business');
+            }, 500);
+            
+            // Step 2: Add application layer showing service mesh
+            setTimeout(() => {
+                document.getElementById(`toggle-application`).checked = true;
+                toggleLayer('application');
+            }, 2000);
+            
+            // Step 3: Add component layer showing modular architecture
+            setTimeout(() => {
+                document.getElementById(`toggle-component`).checked = true;
+                toggleLayer('component');
+            }, 3500);
+            
+            // Step 4: Add package layer showing dependency graph
+            setTimeout(() => {
+                document.getElementById(`toggle-package`).checked = true;
+                toggleLayer('package');
+            }, 5000);
+            
+            // Step 5: Add runtime and compute showing infrastructure
+            setTimeout(() => {
+                document.getElementById(`toggle-runtime`).checked = true;
+                toggleLayer('runtime');
+            }, 6500);
+            
+            setTimeout(() => {
+                document.getElementById(`toggle-compute`).checked = true;
+                toggleLayer('compute');
+            }, 8000);
+        }
+
+        // Preset views
+        function loadPreset(preset) {
+            clearAllLayers();
+            
+            const presets = {
+                security: ['business', 'application', 'package'],
+                developer: ['component', 'package', 'class', 'method'],
+                infrastructure: ['application', 'runtime', 'compute'],
+                fullstack: layerConfig.map(l => l.id)
+            };
+            
+            const layersToShow = presets[preset] || [];
+            layersToShow.forEach((layerId, index) => {
+                setTimeout(() => {
+                    document.getElementById(`toggle-${layerId}`).checked = true;
+                    toggleLayer(layerId);
+                }, index * 200);
+            });
+        }
+
+        // Utility functions
+        function clearAllLayers() {
+            layerConfig.forEach(config => {
+                document.getElementById(`toggle-${config.id}`).checked = false;
+                hideLayer(config.id);
+            });
+            
+            // Clear threat connections
+            connections = connections.filter(conn => {
+                if (conn.userData.type === 'threat' || conn.userData.isArrow) {
+                    scene.remove(conn);
+                    if (conn.geometry) conn.geometry.dispose();
+                    if (conn.material) conn.material.dispose();
+                    return false;
+                }
+                return true;
+            });
+            
+            document.getElementById('threat-level').innerHTML = 
+                'Normal <span class="threat-indicator threat-low"></span>';
+        }
+
+        function showAllLayers() {
+            layerConfig.forEach((config, index) => {
+                setTimeout(() => {
+                    document.getElementById(`toggle-${config.id}`).checked = true;
+                    toggleLayer(config.id);
+                }, index * 100);
+            });
+        }
+
+        function updateStats() {
+            const activeLayers = layerConfig.filter(config => layers[config.id].visible).length;
+            const totalNodes = Object.values(layers).reduce((sum, layer) => sum + layer.nodes.length, 0);
+            const visibleConnections = connections.filter(c => c.visible).length;
+            
+            document.getElementById('active-layers').textContent = `${activeLayers} / ${layerConfig.length}`;
+            document.getElementById('total-nodes').textContent = totalNodes;
+            document.getElementById('total-connections').textContent = visibleConnections;
+        }
+
+        function toggleRotation() {
+            autoRotate = !autoRotate;
+        }
+
+        function resetCamera() {
+            // Reset the camera control values instead of directly setting position
+            if (window.updateCamera && window.updateCamera.updateTargets) {
+                window.updateCamera.updateTargets(0, 0, 1);
+            }
+            // Reset vertical offset
+            window.cameraVerticalOffset = 0;
+        }
+        
+        // Move camera up/down
+        function moveCamera(direction) {
+            const step = 100; // Amount to move
+            
+            if (direction === 'up') {
+                window.cameraVerticalOffset = (window.cameraVerticalOffset || 0) + step;
+            } else {
+                window.cameraVerticalOffset = (window.cameraVerticalOffset || 0) - step;
+            }
+        }
+        
+        // Zoom camera in/out
+        function zoomCamera(direction) {
+            if (window.updateCamera && window.updateCamera.updateTargets) {
+                const currentZoom = window.targetZoom || 1;
+                const step = 0.2;
+                if (direction === 'in') {
+                    window.updateCamera.updateTargets(
+                        window.targetRotationX || 0,
+                        window.targetRotationY || 0,
+                        Math.min(3, currentZoom + step)
+                    );
+                } else {
+                    window.updateCamera.updateTargets(
+                        window.targetRotationX || 0,
+                        window.targetRotationY || 0,
+                        Math.max(0.5, currentZoom - step)
+                    );
+                }
+            }
+        }
+
+        // Handle window resize
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // Layer spacing control
+        document.addEventListener('DOMContentLoaded', () => {
+            const spacingSlider = document.getElementById('spacing-slider');
+            if (spacingSlider) {
+                spacingSlider.addEventListener('input', (e) => {
+                    const spacing = parseFloat(e.target.value);
+                    
+                    // Update display value
+                    const spacingValue = document.getElementById('spacing-value');
+                    if (spacingValue) {
+                        spacingValue.textContent = `(${spacing})`;
+                    }
+                    
+                    // Calculate the center Y position based on spacing
+                    const minLayer = 0;
+                    const maxLayer = 9;
+                    const centerY = (minLayer + maxLayer) * spacing / 2;
+                    
+                    // Update all layer node positions
+                    layerConfig.forEach((config) => {
+                        const layer = layers[config.id];
+                        if (layer && layer.nodes.length > 0) {
+                            const newY = config.height * spacing;
+                            layer.nodes.forEach(node => {
+                                new TWEEN.Tween(node.position)
+                                    .to({ y: newY }, 500)
+                                    .easing(TWEEN.Easing.Cubic.Out)
+                                    .onUpdate(() => {
+                                        // Update connections as nodes move
+                                        connections.forEach(connection => {
+                                            if (connection.userData.start === node || connection.userData.end === node) {
+                                                if (connection.userData.isCylinder) {
+                                                    // Update cylinder position and rotation
+                                                    const start = connection.userData.start.position;
+                                                    const end = connection.userData.end.position;
+                                                    
+                                                    const direction = new THREE.Vector3().subVectors(end, start);
+                                                    const distance = direction.length();
+                                                    direction.normalize();
+                                                    
+                                                    const origin = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
+                                                    
+                                                    connection.position.copy(origin);
+                                                    connection.scale.y = distance / connection.geometry.parameters.height;
+                                                    
+                                                    const quaternion = new THREE.Quaternion();
+                                                    const up = new THREE.Vector3(0, 1, 0);
+                                                    quaternion.setFromUnitVectors(up, direction);
+                                                    connection.quaternion.copy(quaternion);
+                                                } else if (connection.userData.isArrow) {
+                                                    // Update arrow position and rotation
+                                                    const cylinder = connections.find(c => c === connection.userData.connection);
+                                                    if (cylinder && cylinder.userData.start && cylinder.userData.end) {
+                                                        const start = cylinder.userData.start.position;
+                                                        const end = cylinder.userData.end.position;
+                                                        
+                                                        const direction = new THREE.Vector3().subVectors(end, start);
+                                                        direction.normalize();
+                                                        
+                                                        // Position arrow at the end of the connection
+                                                        const arrowOffset = 35;
+                                                        const arrowPosition = new THREE.Vector3().copy(end).sub(
+                                                            direction.clone().multiplyScalar(arrowOffset)
+                                                        );
+                                                        connection.position.copy(arrowPosition);
+                                                        
+                                                        // Update rotation
+                                                        const quaternion = new THREE.Quaternion();
+                                                        const up = new THREE.Vector3(0, 1, 0);
+                                                        quaternion.setFromUnitVectors(up, direction);
+                                                        connection.quaternion.copy(quaternion);
+                                                    }
+                                                }
+                                            }
+                                        });
+                                    })
+                                    .start();
+                            });
+                        }
+                    });
+                    
+                    // Update camera look-at point to follow the center of layers
+                    // Use a lower value to better frame the visualization
+                    if (window.updateCamera) {
+                        window.cameraLookAtY = centerY * 0.6;  // Use 60% of center for better framing
+                        // Maintain the current vertical offset
+                    }
+                });
+            }
+            
+            // Animation speed control
+            const speedSlider = document.getElementById('speed-slider');
+            if (speedSlider) {
+                speedSlider.addEventListener('input', (e) => {
+                    animationSpeed = parseFloat(e.target.value);
+                });
+            }
+        });
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            TWEEN.update();
+            
+            if (autoRotate) {
+                const centerY = (window.cameraLookAtY || 450) + (window.cameraVerticalOffset || 0);  // Include vertical offset
+                camera.position.x = 600 * Math.cos(Date.now() * 0.0002);
+                camera.position.z = 600 * Math.sin(Date.now() * 0.0002);
+                camera.position.y = centerY + 300;  // Keep camera above center
+                camera.lookAt(0, centerY, 0);
+            } else if (window.updateCamera) {
+                window.updateCamera();
+            }
+            
+            // Update connections to follow nodes
+            connections.forEach(connection => {
+                if (connection.userData.isCylinder) {
+                    // Update cylinder position and rotation
+                    const start = connection.userData.start.position;
+                    const end = connection.userData.end.position;
+                    
+                    const direction = new THREE.Vector3().subVectors(end, start);
+                    const distance = direction.length();
+                    direction.normalize();
+                    
+                    const origin = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
+                    
+                    // Update position
+                    connection.position.copy(origin);
+                    
+                    // Update scale (height)
+                    connection.scale.y = distance / connection.geometry.parameters.height;
+                    
+                    // Update rotation
+                    const quaternion = new THREE.Quaternion();
+                    const up = new THREE.Vector3(0, 1, 0);
+                    quaternion.setFromUnitVectors(up, direction);
+                    connection.quaternion.copy(quaternion);
+                } else if (connection.userData.isArrow) {
+                    // Update arrow position and rotation
+                    const cylinder = connections.find(c => c === connection.userData.connection);
+                    if (cylinder && cylinder.userData.start && cylinder.userData.end) {
+                        const start = cylinder.userData.start.position;
+                        const end = cylinder.userData.end.position;
+                        
+                        const direction = new THREE.Vector3().subVectors(end, start);
+                        direction.normalize();
+                        
+                        // Position arrow at the end of the connection
+                        const arrowOffset = 35;
+                        const arrowPosition = new THREE.Vector3().copy(end).sub(
+                            direction.clone().multiplyScalar(arrowOffset)
+                        );
+                        connection.position.copy(arrowPosition);
+                        
+                        // Update rotation
+                        const quaternion = new THREE.Quaternion();
+                        const up = new THREE.Vector3(0, 1, 0);
+                        quaternion.setFromUnitVectors(up, direction);
+                        connection.quaternion.copy(quaternion);
+                    }
+                }
+            });
+            
+            renderer.render(scene, camera);
+        }
+
+        // Initialize on load
+        window.addEventListener('load', init);
+
+        // Additional scenarios
+        function runBreachScenario() {
+            clearAllLayers();
+            
+            // Show runtime and related layers
+            setTimeout(() => {
+                document.getElementById('toggle-runtime').checked = true;
+                toggleLayer('runtime');
+            }, 500);
+            
+            setTimeout(() => {
+                // Find compromised node
+                const breachedNode = layers.runtime.nodes.find(n => n.userData.compromised);
+                if (breachedNode) selectNode(breachedNode);
+            }, 1000);
+            
+            setTimeout(() => {
+                document.getElementById('toggle-application').checked = true;
+                toggleLayer('application');
+            }, 2000);
+            
+            setTimeout(() => {
+                document.getElementById('toggle-business').checked = true;
+                toggleLayer('business');
+                
+                // Show blast radius
+                const breachedNode = layers.runtime.nodes.find(n => n.userData.compromised);
+                if (breachedNode) {
+                    // Create threat connections
+                    const authApp = layers.application.nodes.find(n => n.userData.id === 'app2');
+                    const authBusiness = layers.business.nodes.find(n => n.userData.id === 'bf2');
+                    
+                    if (authApp) createConnection(breachedNode, authApp, 'threat');
+                    if (authBusiness && authApp) createConnection(authApp, authBusiness, 'threat');
+                }
+                
+                document.getElementById('threat-level').innerHTML = 
+                    'Critical <span class="threat-indicator threat-critical"></span>';
+            }, 3000);
+        }
+
+        function runThreatSimulation() {
+            if (Object.values(layers).filter(l => l.visible).length < 2) {
+                alert('Please enable at least 2 layers first to see threat propagation');
+                return;
+            }
+            
+            // Add random threat connections between visible nodes
+            const visibleNodes = Object.values(layers)
+                .filter(l => l.visible)
+                .flatMap(l => l.nodes);
+            
+            for (let i = 0; i < 5; i++) {
+                const node1 = visibleNodes[Math.floor(Math.random() * visibleNodes.length)];
+                const node2 = visibleNodes[Math.floor(Math.random() * visibleNodes.length)];
+                
+                if (node1 !== node2) {
+                    setTimeout(() => {
+                        createConnection(node1, node2, 'threat');
+                    }, i * 300);
+                }
+            }
+            
+            document.getElementById('threat-level').innerHTML = 
+                'High <span class="threat-indicator threat-high"></span>';
+        }
+    </script>
+</body>
+</html>
