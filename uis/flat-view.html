@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ThreatLens 2D - Flat Graph Visualization</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8f9fa;
+            color: #1e293b;
+            overflow: hidden;
+        }
+
+        #graph-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Control Panels */
+        .control-panel {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(226, 232, 240, 1);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+        }
+
+        #controls {
+            top: 20px;
+            right: 20px;
+            width: 320px;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+        }
+
+        #info-panel {
+            bottom: 20px;
+            left: 20px;
+            width: 300px;
+        }
+
+        /* Layer filters */
+        .layer-filter {
+            margin: 8px 0;
+            padding: 10px;
+            background: rgba(248, 250, 252, 1);
+            border: 1px solid rgba(226, 232, 240, 1);
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+        }
+
+        .layer-filter:hover {
+            background: rgba(241, 245, 249, 1);
+            border-color: rgba(203, 213, 225, 1);
+        }
+
+        .layer-color-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 10px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+
+        .layer-filter input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            margin-right: 10px;
+            cursor: pointer;
+            accent-color: #3b82f6;
+        }
+
+        .layer-name {
+            flex-grow: 1;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .node-count {
+            font-size: 11px;
+            color: #94a3b8;
+            background: rgba(226, 232, 240, 0.8);
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+
+        /* Layout buttons */
+        .layout-buttons {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .button {
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex: 1;
+        }
+
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(59, 130, 246, 0.35);
+        }
+
+        .button.secondary {
+            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+            color: #475569;
+        }
+
+        .button.active {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+
+        /* SVG Styles */
+        .node {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .node:hover {
+            filter: brightness(1.2);
+        }
+
+        .node-label {
+            font-size: 12px;
+            font-weight: 500;
+            fill: #1e293b;
+            text-anchor: middle;
+            pointer-events: none;
+            text-shadow: 0 0 3px white, 0 0 5px white, 0 0 7px white;
+        }
+
+        .link {
+            fill: none;
+            stroke-width: 2;
+            opacity: 0.6;
+            transition: all 0.3s ease;
+        }
+
+        .link:hover {
+            opacity: 1;
+            stroke-width: 3;
+        }
+
+        .link.parent { stroke: #3b82f6; }
+        .link.data-flow { stroke: #10b981; }
+        .link.dependency { stroke: #f97316; stroke-dasharray: 5,5; }
+        .link.authenticates { stroke: #8b5cf6; }
+        .link.threat { stroke: #dc2626; stroke-width: 3; opacity: 1; }
+
+        /* Arrowhead markers */
+        .arrow {
+            fill: #3b82f6;
+        }
+
+        /* Legend */
+        .legend {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(226, 232, 240, 1);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 6px 0;
+            font-size: 12px;
+        }
+
+        .legend-line {
+            width: 30px;
+            height: 2px;
+            margin-right: 10px;
+            border-radius: 1px;
+        }
+
+        /* Stats section */
+        .stats-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(226, 232, 240, 1);
+        }
+
+        .stats-section h3 {
+            margin-bottom: 15px;
+        }
+
+        /* Info items */
+        .info-item {
+            margin: 10px 0;
+            font-size: 13px;
+            display: flex;
+            justify-content: space-between;
+            padding: 8px;
+            background: rgba(248, 250, 252, 1);
+            border-radius: 6px;
+        }
+
+        .info-label {
+            color: #64748b;
+        }
+
+        .info-value {
+            color: #1e293b;
+            font-weight: 600;
+        }
+
+        #node-details {
+            background: rgba(248, 250, 252, 1);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        #node-details h3 {
+            margin-top: 0;
+        }
+
+        /* Zoom controls */
+        .zoom-controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .zoom-button {
+            width: 40px;
+            height: 40px;
+            border: none;
+            background: white;
+            cursor: pointer;
+            font-size: 20px;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .zoom-button:hover {
+            background: #f1f5f9;
+        }
+
+        .zoom-button:first-child {
+            border-radius: 8px 8px 0 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .zoom-button:last-child {
+            border-radius: 0 0 8px 8px;
+        }
+
+        /* Tooltip */
+        .tooltip {
+            position: absolute;
+            padding: 8px 12px;
+            background: rgba(30, 41, 59, 0.95);
+            color: white;
+            border-radius: 6px;
+            font-size: 12px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 1000;
+        }
+
+        /* Loading */
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 24px;
+            color: #3b82f6;
+            font-weight: 500;
+        }
+
+        h3 {
+            margin: 0 0 15px 0;
+            font-size: 16px;
+            color: #1e293b;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div id="loading">Initializing 2D Graph...</div>
+    <div id="graph-container"></div>
+
+    <!-- Zoom Controls -->
+    <div class="zoom-controls">
+        <button class="zoom-button" onclick="zoomIn()">+</button>
+        <button class="zoom-button" onclick="zoomReset()">⟲</button>
+        <button class="zoom-button" onclick="zoomOut()">−</button>
+    </div>
+
+    <!-- Control Panel -->
+    <div id="controls" class="control-panel">
+        <h3>🎨 View Controls</h3>
+        
+        <div class="layout-buttons">
+            <button class="button active" onclick="setLayout('force', event)">Force</button>
+            <button class="button" onclick="setLayout('hierarchical', event)">Hierarchy</button>
+            <button class="button" onclick="setLayout('radial', event)">Radial</button>
+        </div>
+
+        <h3 style="margin-top: 20px;">📊 Layer Filters</h3>
+        <div id="layer-filters"></div>
+
+        <div style="margin-top: 20px;">
+            <button class="button secondary" onclick="showAllLayers()">Show All</button>
+            <button class="button secondary" onclick="hideAllLayers()">Hide All</button>
+        </div>
+
+        <div class="legend">
+            <h3>Connection Types</h3>
+            <div class="legend-item">
+                <div class="legend-line" style="background: #3b82f6;"></div>
+                <span>Parent-Child</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-line" style="background: #10b981;"></div>
+                <span>Data Flow</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-line" style="background: #f97316; background-image: repeating-linear-gradient(90deg, #f97316, #f97316 5px, transparent 5px, transparent 10px);"></div>
+                <span>Dependency</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-line" style="background: #8b5cf6;"></div>
+                <span>Authentication</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-line" style="background: #dc2626;"></div>
+                <span>Threat Path</span>
+            </div>
+        </div>
+
+        <div class="stats-section">
+            <h3>📈 Graph Statistics</h3>
+            <div class="info-item">
+                <span class="info-label">Total Nodes:</span>
+                <span class="info-value" id="total-nodes">0</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Visible Nodes:</span>
+                <span class="info-value" id="visible-nodes">0</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Connections:</span>
+                <span class="info-value" id="total-connections">0</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Selected Node:</span>
+                <span class="info-value" id="selected-node">None</span>
+            </div>
+
+            <div id="node-details" style="margin-top: 20px; display: none;">
+                <h3>Node Details</h3>
+                <div id="node-info"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tooltip -->
+    <div class="tooltip" id="tooltip"></div>
+
+    <script>
+        // Layer configuration with colors
+        const layerConfig = [
+            { id: 'customer', name: 'Customer', color: '#6366f1' },
+            { id: 'business', name: 'Business Functions', color: '#1e3a8a' },
+            { id: 'application', name: 'Applications', color: '#6b21a8' },
+            { id: 'component', name: 'Components', color: '#be185d' },
+            { id: 'package', name: 'Packages', color: '#ea580c' },
+            { id: 'class', name: 'Classes', color: '#dc2626' },
+            { id: 'method', name: 'Methods', color: '#ca8a04' },
+            { id: 'code', name: 'Source Code', color: '#84cc16' },
+            { id: 'environment', name: 'Environment', color: '#16a34a' },
+            { id: 'runtime', name: 'Runtime', color: '#0891b2' },
+            { id: 'compute', name: 'Compute', color: '#2563eb' }
+        ];
+
+        // Graph data - flattened version of the 3D data
+        const nodes = [
+            // Customer
+            { id: 'cust1', name: 'End Customer', layer: 'customer', risk: 'critical' },
+            
+            // Business Functions
+            { id: 'bf1', name: 'Payment Processing', layer: 'business', risk: 'high' },
+            { id: 'bf2', name: 'User Authentication', layer: 'business', risk: 'critical' },
+            { id: 'bf3', name: 'Order Fulfillment', layer: 'business', risk: 'medium' },
+            { id: 'bf4', name: 'Customer Data', layer: 'business', risk: 'high' },
+            
+            // Applications
+            { id: 'app1', name: 'PaymentService API', layer: 'application' },
+            { id: 'app2', name: 'AuthService', layer: 'application' },
+            { id: 'app3', name: 'OrderManagement', layer: 'application' },
+            { id: 'app4', name: 'CustomerPortal', layer: 'application' },
+            { id: 'app5', name: 'NotificationService', layer: 'application' },
+            
+            // Components
+            { id: 'comp1', name: 'Payment Gateway', layer: 'component' },
+            { id: 'comp2', name: 'Transaction Validator', layer: 'component' },
+            { id: 'comp3', name: 'Fraud Detector', layer: 'component' },
+            { id: 'comp4', name: 'Auth Token Manager', layer: 'component' },
+            { id: 'comp5', name: 'Session Handler', layer: 'component' },
+            { id: 'comp6', name: 'Order Processor', layer: 'component' },
+            { id: 'comp7', name: 'Inventory Manager', layer: 'component' },
+            
+            // Packages
+            { id: 'pkg1', name: 'stripe-python 5.1.0', layer: 'package', type: 'external', vulnerable: true },
+            { id: 'pkg2', name: 'cryptography 41.0.5', layer: 'package', type: 'external' },
+            { id: 'pkg3', name: 'payment-core', layer: 'package', type: 'internal' },
+            { id: 'pkg4', name: 'requests 2.31.0', layer: 'package', type: 'external' },
+            { id: 'pkg5', name: 'pydantic 2.4.2', layer: 'package', type: 'external' },
+            { id: 'pkg6', name: 'jwt-auth', layer: 'package', type: 'internal' },
+            { id: 'pkg7', name: 'redis-py', layer: 'package', type: 'external' },
+            
+            // Classes
+            { id: 'cls1', name: 'PaymentProcessor', layer: 'class' },
+            { id: 'cls2', name: 'CardValidator', layer: 'class' },
+            { id: 'cls3', name: 'FraudDetector', layer: 'class' },
+            { id: 'cls4', name: 'PaymentRequest', layer: 'class' },
+            { id: 'cls5', name: 'PaymentResponse', layer: 'class' },
+            { id: 'cls6', name: 'TokenManager', layer: 'class' },
+            
+            // Methods
+            { id: 'mth1', name: 'process_payment()', layer: 'method' },
+            { id: 'mth2', name: 'validate_card_details()', layer: 'method' },
+            { id: 'mth3', name: 'check_fraud_score()', layer: 'method' },
+            { id: 'mth4', name: 'encrypt_sensitive_data()', layer: 'method' },
+            { id: 'mth5', name: 'call_payment_gateway()', layer: 'method' },
+            { id: 'mth6', name: 'generate_token()', layer: 'method' },
+            
+            // Code
+            { id: 'code1', name: 'Line 142: tokenize()', layer: 'code', line: 142 },
+            { id: 'code2', name: 'Line 145: calculate_risk()', layer: 'code', line: 145 },
+            { id: 'code3', name: 'Line 148: fraud_check', layer: 'code', line: 148 },
+            { id: 'code4', name: 'Line 152: encrypt_data()', layer: 'code', line: 152 },
+            { id: 'code5', name: 'Line 156: gateway.charge()', layer: 'code', line: 156, sqlInjection: true },
+            { id: 'code6', name: 'Line 160: audit_log()', layer: 'code', line: 160 },
+            
+            // Environment
+            { id: 'env1', name: 'Python 3.11.5', layer: 'environment', type: 'python' },
+            { id: 'env2', name: 'Node.js 20.9.0', layer: 'environment', type: 'nodejs' },
+            { id: 'env3', name: 'Java 17', layer: 'environment', type: 'java' },
+            { id: 'env4', name: 'Go 1.21', layer: 'environment', type: 'go' },
+            
+            // Runtime
+            { id: 'rt1', name: 'Lambda-Payment', layer: 'runtime', type: 'lambda' },
+            { id: 'rt2', name: 'K8s-Auth-Pod', layer: 'runtime', type: 'kubernetes', compromised: true },
+            { id: 'rt3', name: 'Container-Orders', layer: 'runtime', type: 'container' },
+            { id: 'rt4', name: 'CloudRun-Notify', layer: 'runtime', type: 'cloudrun' },
+            
+            // Compute
+            { id: 'cmp1', name: 'AWS us-east-1', layer: 'compute', type: 'aws' },
+            { id: 'cmp2', name: 'AWS eu-west-1', layer: 'compute', type: 'aws' },
+            { id: 'cmp3', name: 'GKE prod-cluster', layer: 'compute', type: 'gcp' },
+            { id: 'cmp4', name: 'Azure AKS', layer: 'compute', type: 'azure' }
+        ];
+
+        // Links between nodes
+        const links = [
+            // Customer to Business
+            { source: 'cust1', target: 'bf1', type: 'parent' },
+            { source: 'cust1', target: 'bf2', type: 'parent' },
+            { source: 'cust1', target: 'bf3', type: 'parent' },
+            { source: 'cust1', target: 'bf4', type: 'parent' },
+            
+            // Business to Application
+            { source: 'bf1', target: 'app1', type: 'parent' },
+            { source: 'bf2', target: 'app2', type: 'parent' },
+            { source: 'bf3', target: 'app3', type: 'parent' },
+            { source: 'bf4', target: 'app4', type: 'parent' },
+            
+            // Application to Component
+            { source: 'app1', target: 'comp1', type: 'parent' },
+            { source: 'app1', target: 'comp2', type: 'parent' },
+            { source: 'app1', target: 'comp3', type: 'parent' },
+            { source: 'app2', target: 'comp4', type: 'parent' },
+            { source: 'app2', target: 'comp5', type: 'parent' },
+            { source: 'app3', target: 'comp6', type: 'parent' },
+            { source: 'app3', target: 'comp7', type: 'parent' },
+            
+            // Component to Package
+            { source: 'comp1', target: 'pkg1', type: 'parent' },
+            { source: 'comp1', target: 'pkg3', type: 'parent' },
+            { source: 'comp2', target: 'pkg2', type: 'parent' },
+            { source: 'comp4', target: 'pkg6', type: 'parent' },
+            { source: 'comp5', target: 'pkg7', type: 'parent' },
+            
+            // Package to Class
+            { source: 'pkg3', target: 'cls1', type: 'parent' },
+            { source: 'pkg3', target: 'cls2', type: 'parent' },
+            { source: 'pkg3', target: 'cls3', type: 'parent' },
+            { source: 'pkg3', target: 'cls4', type: 'parent' },
+            { source: 'pkg3', target: 'cls5', type: 'parent' },
+            { source: 'pkg6', target: 'cls6', type: 'parent' },
+            
+            // Class to Method
+            { source: 'cls1', target: 'mth1', type: 'parent' },
+            { source: 'cls1', target: 'mth4', type: 'parent' },
+            { source: 'cls1', target: 'mth5', type: 'parent' },
+            { source: 'cls2', target: 'mth2', type: 'parent' },
+            { source: 'cls3', target: 'mth3', type: 'parent' },
+            { source: 'cls6', target: 'mth6', type: 'parent' },
+            
+            // Method to Code
+            { source: 'mth1', target: 'code1', type: 'parent' },
+            { source: 'mth1', target: 'code2', type: 'parent' },
+            { source: 'mth1', target: 'code3', type: 'parent' },
+            { source: 'mth1', target: 'code6', type: 'parent' },
+            { source: 'mth4', target: 'code4', type: 'parent' },
+            { source: 'mth5', target: 'code5', type: 'parent' },
+            
+            // Code to Environment
+            { source: 'code1', target: 'env1', type: 'dependency' },
+            { source: 'code2', target: 'env1', type: 'dependency' },
+            { source: 'code3', target: 'env1', type: 'dependency' },
+            { source: 'code4', target: 'env1', type: 'dependency' },
+            { source: 'code5', target: 'env4', type: 'dependency' },
+            { source: 'code6', target: 'env3', type: 'dependency' },
+            
+            // Environment to Runtime
+            { source: 'env1', target: 'rt1', type: 'data-flow' },
+            { source: 'env2', target: 'rt2', type: 'data-flow' },
+            { source: 'env3', target: 'rt3', type: 'data-flow' },
+            { source: 'env4', target: 'rt4', type: 'data-flow' },
+            
+            // Runtime to Compute
+            { source: 'rt1', target: 'cmp1', type: 'dependency' },
+            { source: 'rt2', target: 'cmp3', type: 'dependency' },
+            { source: 'rt3', target: 'cmp2', type: 'dependency' },
+            { source: 'rt4', target: 'cmp4', type: 'dependency' },
+            
+            // Lateral connections
+            { source: 'bf1', target: 'bf2', type: 'authenticates' },
+            { source: 'bf3', target: 'bf1', type: 'data-flow' },
+            { source: 'bf4', target: 'bf2', type: 'data-flow' },
+            { source: 'app1', target: 'app2', type: 'authenticates' },
+            { source: 'app3', target: 'app1', type: 'data-flow' },
+            { source: 'app3', target: 'app5', type: 'data-flow' },
+            { source: 'app1', target: 'app5', type: 'data-flow' },
+            { source: 'comp1', target: 'comp2', type: 'data-flow' },
+            { source: 'comp2', target: 'comp3', type: 'data-flow' },
+            { source: 'comp4', target: 'comp5', type: 'dependency' },
+            { source: 'pkg1', target: 'pkg4', type: 'dependency' },
+            { source: 'pkg3', target: 'pkg4', type: 'dependency' },
+            { source: 'pkg3', target: 'pkg2', type: 'dependency' },
+            { source: 'pkg1', target: 'pkg5', type: 'dependency' },
+            { source: 'pkg7', target: 'pkg4', type: 'dependency' },
+            { source: 'pkg7', target: 'pkg5', type: 'dependency' },
+            { source: 'cls1', target: 'cls2', type: 'dependency' },
+            { source: 'cls1', target: 'cls3', type: 'dependency' },
+            { source: 'cls1', target: 'cls4', type: 'data-flow' },
+            { source: 'cls1', target: 'cls5', type: 'data-flow' },
+            { source: 'cls6', target: 'cls1', type: 'dependency' },
+            { source: 'cls6', target: 'cls5', type: 'data-flow' },
+            { source: 'mth1', target: 'mth2', type: 'data-flow' },
+            { source: 'mth1', target: 'mth3', type: 'data-flow' },
+            { source: 'mth1', target: 'mth4', type: 'data-flow' },
+            { source: 'mth1', target: 'mth5', type: 'data-flow' },
+            { source: 'mth6', target: 'mth4', type: 'dependency' },
+            { source: 'code1', target: 'code2', type: 'data-flow' },
+            { source: 'code2', target: 'code3', type: 'data-flow' },
+            { source: 'code3', target: 'code4', type: 'data-flow' },
+            { source: 'code4', target: 'code5', type: 'data-flow' },
+            { source: 'code5', target: 'code6', type: 'data-flow' },
+            { source: 'env1', target: 'env2', type: 'dependency' },
+            { source: 'env3', target: 'env4', type: 'dependency' },
+            { source: 'env2', target: 'env3', type: 'data-flow' },
+            { source: 'env1', target: 'env4', type: 'data-flow' },
+            { source: 'rt1', target: 'rt2', type: 'data-flow' },
+            { source: 'rt3', target: 'rt4', type: 'data-flow' },
+            { source: 'rt2', target: 'rt3', type: 'dependency' },
+            { source: 'rt4', target: 'rt1', type: 'data-flow' },
+            { source: 'cmp1', target: 'cmp2', type: 'dependency' },
+            { source: 'cmp3', target: 'cmp4', type: 'dependency' },
+            { source: 'cmp2', target: 'cmp3', type: 'data-flow' },
+            { source: 'cmp1', target: 'cmp4', type: 'data-flow' }
+        ];
+
+        // Global variables
+        let svg, g, simulation;
+        let currentLayout = 'force';
+        let selectedNode = null;
+        let layerVisibility = {};
+
+        // Initialize
+        function init() {
+            // Set initial visibility (show first 3 layers)
+            layerConfig.forEach((layer, i) => {
+                layerVisibility[layer.id] = i < 3;
+            });
+
+            createLayerFilters();
+            initializeGraph();
+            updateStats();
+            
+            // Set hierarchical as default layout
+            setLayout('hierarchical', { target: document.querySelector('.layout-buttons .button:nth-child(2)') });
+            
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        // Create layer filter checkboxes
+        function createLayerFilters() {
+            const container = document.getElementById('layer-filters');
+            
+            layerConfig.forEach(layer => {
+                const nodeCount = nodes.filter(n => n.layer === layer.id).length;
+                const filter = document.createElement('div');
+                filter.className = 'layer-filter';
+                
+                filter.innerHTML = `
+                    <div class="layer-color-dot" style="background: ${layer.color};"></div>
+                    <input type="checkbox" id="layer-${layer.id}" 
+                           ${layerVisibility[layer.id] ? 'checked' : ''} 
+                           onchange="toggleLayer('${layer.id}')">
+                    <label for="layer-${layer.id}" class="layer-name">${layer.name}</label>
+                    <span class="node-count">${nodeCount}</span>
+                `;
+                
+                container.appendChild(filter);
+            });
+        }
+
+        // Initialize D3 graph
+        function initializeGraph() {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+
+            // Create SVG
+            svg = d3.select('#graph-container')
+                .append('svg')
+                .attr('width', width)
+                .attr('height', height);
+
+            // Add zoom behavior
+            const zoom = d3.zoom()
+                .scaleExtent([0.1, 10])
+                .on('zoom', (event) => {
+                    g.attr('transform', event.transform);
+                });
+
+            svg.call(zoom);
+
+            // Create main group
+            g = svg.append('g');
+
+            // Define arrow markers
+            const defs = svg.append('defs');
+            
+            ['parent', 'data-flow', 'dependency', 'authenticates', 'threat'].forEach(type => {
+                defs.append('marker')
+                    .attr('id', `arrow-${type}`)
+                    .attr('viewBox', '0 -5 10 10')
+                    .attr('refX', 25)
+                    .attr('refY', 0)
+                    .attr('markerWidth', 6)
+                    .attr('markerHeight', 6)
+                    .attr('orient', 'auto')
+                    .append('path')
+                    .attr('d', 'M0,-5L10,0L0,5')
+                    .attr('fill', getColorForType(type));
+            });
+
+            // Create force simulation
+            createForceLayout();
+        }
+
+        // Get color for connection type
+        function getColorForType(type) {
+            switch(type) {
+                case 'parent': return '#3b82f6';
+                case 'data-flow': return '#10b981';
+                case 'dependency': return '#f97316';
+                case 'authenticates': return '#8b5cf6';
+                case 'threat': return '#dc2626';
+                default: return '#3b82f6';
+            }
+        }
+
+        // Create force-directed layout
+        function createForceLayout() {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+
+            simulation = d3.forceSimulation(nodes)
+                .force('link', d3.forceLink(links).id(d => d.id).distance(100))
+                .force('charge', d3.forceManyBody().strength(-300))
+                .force('center', d3.forceCenter(width / 2, height / 2))
+                .force('collision', d3.forceCollide().radius(30));
+
+            // Create links
+            const link = g.append('g')
+                .selectAll('line')
+                .data(links)
+                .join('line')
+                .attr('class', d => `link ${d.type}`)
+                .attr('marker-end', d => `url(#arrow-${d.type})`);
+
+            // Create nodes
+            const node = g.append('g')
+                .selectAll('g')
+                .data(nodes)
+                .join('g')
+                .attr('class', 'node-group')
+                .call(drag(simulation));
+
+            // Add circles for nodes
+            node.append('circle')
+                .attr('class', 'node')
+                .attr('r', 20)
+                .attr('fill', d => {
+                    if (d.vulnerable) return '#f97316';
+                    if (d.compromised) return '#dc2626';
+                    const layer = layerConfig.find(l => l.id === d.layer);
+                    return layer ? layer.color : '#666';
+                })
+                .attr('stroke', '#fff')
+                .attr('stroke-width', 2)
+                .on('click', selectNode)
+                .on('mouseover', showTooltip)
+                .on('mouseout', hideTooltip);
+
+            // Add labels
+            node.append('text')
+                .attr('class', 'node-label')
+                .attr('dy', 35)
+                .text(d => d.name)
+                .style('font-size', '11px');
+
+            // Update positions on simulation tick
+            simulation.on('tick', () => {
+                link
+                    .attr('x1', d => d.source.x)
+                    .attr('y1', d => d.source.y)
+                    .attr('x2', d => d.target.x)
+                    .attr('y2', d => d.target.y);
+
+                node
+                    .attr('transform', d => `translate(${d.x},${d.y})`);
+            });
+
+            updateVisibility();
+        }
+
+        // Drag behavior
+        function drag(simulation) {
+            function dragstarted(event) {
+                if (!event.active) simulation.alphaTarget(0.3).restart();
+                event.subject.fx = event.subject.x;
+                event.subject.fy = event.subject.y;
+            }
+
+            function dragged(event) {
+                event.subject.fx = event.x;
+                event.subject.fy = event.y;
+            }
+
+            function dragended(event) {
+                if (!event.active) simulation.alphaTarget(0);
+                event.subject.fx = null;
+                event.subject.fy = null;
+            }
+
+            return d3.drag()
+                .on('start', dragstarted)
+                .on('drag', dragged)
+                .on('end', dragended);
+        }
+
+        // Toggle layer visibility
+        function toggleLayer(layerId) {
+            layerVisibility[layerId] = !layerVisibility[layerId];
+            updateVisibility();
+            updateStats();
+        }
+
+        // Update node and link visibility
+        function updateVisibility() {
+            // Update nodes
+            g.selectAll('.node-group')
+                .style('display', d => layerVisibility[d.layer] ? 'block' : 'none');
+
+            // Update links
+            g.selectAll('.link')
+                .style('display', d => {
+                    const sourceVisible = layerVisibility[nodes.find(n => n.id === d.source.id).layer];
+                    const targetVisible = layerVisibility[nodes.find(n => n.id === d.target.id).layer];
+                    return sourceVisible && targetVisible ? 'block' : 'none';
+                });
+        }
+
+        // Select node
+        function selectNode(event, d) {
+            // Reset previous selection
+            g.selectAll('.node').attr('stroke', '#fff').attr('stroke-width', 2);
+            g.selectAll('.link').style('opacity', 0.6);
+
+            // Highlight selected node
+            d3.select(event.target)
+                .attr('stroke', '#1e293b')
+                .attr('stroke-width', 4);
+
+            selectedNode = d;
+            
+            // Update info panel
+            document.getElementById('selected-node').textContent = d.name;
+            document.getElementById('node-details').style.display = 'block';
+            
+            const layer = layerConfig.find(l => l.id === d.layer);
+            const details = `
+                <div class="info-item">
+                    <span class="info-label">Layer:</span>
+                    <span class="info-value">${layer.name}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Type:</span>
+                    <span class="info-value">${d.type || 'Standard'}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Risk:</span>
+                    <span class="info-value">${d.risk || 'Low'}</span>
+                </div>
+                ${d.vulnerable ? '<div style="color: #f97316; font-weight: bold;">⚠️ Contains vulnerability: CVE-2023-12345</div>' : ''}
+                ${d.compromised ? '<div style="color: #dc2626; font-weight: bold;">🚨 COMPROMISED</div>' : ''}
+                ${d.sqlInjection ? '<div style="color: #dc2626; font-weight: bold;">⚠️ SQL INJECTION DETECTED</div>' : ''}
+            `;
+            
+            document.getElementById('node-info').innerHTML = details;
+
+            // Highlight connected links
+            g.selectAll('.link')
+                .style('opacity', d => {
+                    return d.source.id === selectedNode.id || d.target.id === selectedNode.id ? 1 : 0.2;
+                })
+                .style('stroke-width', d => {
+                    return d.source.id === selectedNode.id || d.target.id === selectedNode.id ? 3 : 2;
+                });
+        }
+
+        // Tooltip functions
+        function showTooltip(event, d) {
+            const tooltip = document.getElementById('tooltip');
+            tooltip.style.opacity = 1;
+            tooltip.style.left = (event.pageX + 10) + 'px';
+            tooltip.style.top = (event.pageY - 10) + 'px';
+            tooltip.textContent = `${d.name} (${d.layer})`;
+        }
+
+        function hideTooltip() {
+            document.getElementById('tooltip').style.opacity = 0;
+        }
+
+        // Layout functions
+        function setLayout(layout, event) {
+            currentLayout = layout;
+            
+            // Update button states
+            document.querySelectorAll('.layout-buttons .button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Stop current simulation
+            simulation.stop();
+
+            switch(layout) {
+                case 'force':
+                    createForceLayout();
+                    break;
+                case 'hierarchical':
+                    createHierarchicalLayout();
+                    break;
+                case 'radial':
+                    createRadialLayout();
+                    break;
+            }
+        }
+
+        // Hierarchical layout
+        function createHierarchicalLayout() {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            
+            // Group nodes by layer
+            const layers = d3.group(nodes, d => d.layer);
+            const layerHeight = height / layerConfig.length;
+            
+            // Position nodes
+            let yOffset = 50;
+            layerConfig.forEach(layer => {
+                const layerNodes = layers.get(layer.id) || [];
+                const xSpacing = width / (layerNodes.length + 1);
+                
+                layerNodes.forEach((node, i) => {
+                    node.x = xSpacing * (i + 1);
+                    node.y = yOffset;
+                    node.fx = node.x;
+                    node.fy = node.y;
+                });
+                
+                yOffset += layerHeight;
+            });
+
+            // Update visualization
+            updatePositions();
+        }
+
+        // Radial layout
+        function createRadialLayout() {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            const centerX = width / 2;
+            const centerY = height / 2;
+            
+            // Group nodes by layer
+            const layers = d3.group(nodes, d => d.layer);
+            const angleStep = (2 * Math.PI) / nodes.length;
+            
+            // Position nodes in concentric circles
+            let nodeIndex = 0;
+            layerConfig.forEach((layer, layerIndex) => {
+                const radius = 100 + layerIndex * 80;
+                const layerNodes = layers.get(layer.id) || [];
+                
+                layerNodes.forEach((node, i) => {
+                    const angle = angleStep * nodeIndex++;
+                    node.x = centerX + radius * Math.cos(angle);
+                    node.y = centerY + radius * Math.sin(angle);
+                    node.fx = node.x;
+                    node.fy = node.y;
+                });
+            });
+
+            // Update visualization
+            updatePositions();
+        }
+
+        // Update node positions
+        function updatePositions() {
+            g.selectAll('.node-group')
+                .transition()
+                .duration(750)
+                .attr('transform', d => `translate(${d.x},${d.y})`);
+
+            g.selectAll('.link')
+                .transition()
+                .duration(750)
+                .attr('x1', d => d.source.x)
+                .attr('y1', d => d.source.y)
+                .attr('x2', d => d.target.x)
+                .attr('y2', d => d.target.y);
+        }
+
+        // Stats update
+        function updateStats() {
+            const visibleNodes = nodes.filter(n => layerVisibility[n.layer]);
+            const visibleLinks = links.filter(l => {
+                const sourceVisible = layerVisibility[nodes.find(n => n.id === l.source.id || n.id === l.source).layer];
+                const targetVisible = layerVisibility[nodes.find(n => n.id === l.target.id || n.id === l.target).layer];
+                return sourceVisible && targetVisible;
+            });
+
+            document.getElementById('total-nodes').textContent = nodes.length;
+            document.getElementById('visible-nodes').textContent = visibleNodes.length;
+            document.getElementById('total-connections').textContent = visibleLinks.length;
+        }
+
+        // Utility functions
+        function showAllLayers() {
+            layerConfig.forEach(layer => {
+                layerVisibility[layer.id] = true;
+                document.getElementById(`layer-${layer.id}`).checked = true;
+            });
+            updateVisibility();
+            updateStats();
+        }
+
+        function hideAllLayers() {
+            layerConfig.forEach(layer => {
+                layerVisibility[layer.id] = false;
+                document.getElementById(`layer-${layer.id}`).checked = false;
+            });
+            updateVisibility();
+            updateStats();
+        }
+
+        // Zoom controls
+        function zoomIn() {
+            svg.transition()
+                .duration(300)
+                .call(
+                    d3.zoom().scaleBy,
+                    1.3
+                )
+                .on("end", updatePositions);;
+            updatePositions();
+        }
+
+        function zoomOut() {
+            svg.transition()
+                .duration(300)
+                .call(
+                    d3.zoom().scaleBy,
+                    0.7
+                );
+            updatePositions();
+        }
+
+        function zoomReset() {
+            svg.transition()
+                .duration(300)
+                .call(
+                    d3.zoom().transform,
+                    d3.zoomIdentity
+                );
+            updatePositions();
+        }
+
+        // Window resize handler
+        window.addEventListener('resize', () => {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            
+            svg.attr('width', width).attr('height', height);
+            
+            if (currentLayout === 'force') {
+                simulation.force('center', d3.forceCenter(width / 2, height / 2));
+                simulation.alpha(0.3).restart();
+            }
+        });
+
+        // Initialize on load
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
