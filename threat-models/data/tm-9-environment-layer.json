@@ -1,0 +1,326 @@
+{
+  "layer": "environment",
+  "description": "Threat models for execution environment components",
+  "threatModels": [
+    {
+      "nodeId": "env1",
+      "nodeInfo": "Python 3.11.5",
+      "threats": [
+        {
+          "id": "T-ENV1-001",
+          "name": "Interpreter Vulnerability",
+          "description": "Known vulnerabilities in Python interpreter",
+          "category": "compromise",
+          "likelihood": 2,
+          "impact": 4
+        },
+        {
+          "id": "T-ENV1-002",
+          "name": "Pickle Deserialization",
+          "description": "Unsafe deserialization leading to RCE",
+          "category": "compromise",
+          "likelihood": 2,
+          "impact": 5
+        },
+        {
+          "id": "T-ENV1-003",
+          "name": "Path Traversal",
+          "description": "Directory traversal through file operations",
+          "category": "compromise",
+          "likelihood": 3,
+          "impact": 3
+        },
+        {
+          "id": "T-ENV1-004",
+          "name": "Supply Chain Attack",
+          "description": "Malicious packages in Python ecosystem",
+          "category": "integrity",
+          "likelihood": 2,
+          "impact": 4
+        }
+      ],
+      "controls": [
+        {
+          "id": "C-ENV1-001",
+          "name": "Version Updates",
+          "type": "preventive",
+          "effectiveness": 80,
+          "mitigates": ["T-ENV1-001"]
+        },
+        {
+          "id": "C-ENV1-002",
+          "name": "Pickle Restrictions",
+          "type": "preventive",
+          "effectiveness": 90,
+          "mitigates": ["T-ENV1-002"]
+        },
+        {
+          "id": "C-ENV1-003",
+          "name": "Path Validation",
+          "type": "preventive",
+          "effectiveness": 85,
+          "mitigates": ["T-ENV1-003"]
+        },
+        {
+          "id": "C-ENV1-004",
+          "name": "Package Scanning",
+          "type": "detective",
+          "effectiveness": 75,
+          "mitigates": ["T-ENV1-004"]
+        }
+      ],
+      "vulnerabilities": [],
+      "riskScore": {
+        "inherent": 65,
+        "residual": 25,
+        "trend": "stable"
+      },
+      "metadata": {
+        "lastAssessed": "2024-12-14T09:00:00Z",
+        "owner": "platform-team",
+        "compliance": [],
+        "tags": ["runtime", "python", "interpreter"]
+      }
+    },
+    {
+      "nodeId": "env2",
+      "nodeInfo": "Node.js 20.9.0",
+      "threats": [
+        {
+          "id": "T-ENV2-001",
+          "name": "Prototype Pollution",
+          "description": "JavaScript prototype pollution attacks",
+          "category": "compromise",
+          "likelihood": 3,
+          "impact": 4
+        },
+        {
+          "id": "T-ENV2-002",
+          "name": "Event Loop Blocking",
+          "description": "DoS through event loop saturation",
+          "category": "availability",
+          "likelihood": 3,
+          "impact": 3
+        },
+        {
+          "id": "T-ENV2-003",
+          "name": "NPM Dependency Risk",
+          "description": "Vulnerable or malicious NPM packages",
+          "category": "integrity",
+          "likelihood": 3,
+          "impact": 4
+        },
+        {
+          "id": "T-ENV2-004",
+          "name": "Buffer Overflow",
+          "description": "Native module buffer overflow vulnerabilities",
+          "category": "compromise",
+          "likelihood": 2,
+          "impact": 4
+        }
+      ],
+      "controls": [
+        {
+          "id": "C-ENV2-001",
+          "name": "Object.freeze()",
+          "type": "preventive",
+          "effectiveness": 80,
+          "mitigates": ["T-ENV2-001"]
+        },
+        {
+          "id": "C-ENV2-002",
+          "name": "Worker Threads",
+          "type": "preventive",
+          "effectiveness": 85,
+          "mitigates": ["T-ENV2-002"]
+        },
+        {
+          "id": "C-ENV2-003",
+          "name": "NPM Audit",
+          "type": "detective",
+          "effectiveness": 80,
+          "mitigates": ["T-ENV2-003"]
+        },
+        {
+          "id": "C-ENV2-004",
+          "name": "Memory Limits",
+          "type": "preventive",
+          "effectiveness": 75,
+          "mitigates": ["T-ENV2-004"]
+        }
+      ],
+      "vulnerabilities": [],
+      "riskScore": {
+        "inherent": 70,
+        "residual": 25,
+        "trend": "stable"
+      },
+      "metadata": {
+        "lastAssessed": "2024-12-13T10:00:00Z",
+        "owner": "frontend-team",
+        "compliance": [],
+        "tags": ["runtime", "nodejs", "javascript"]
+      }
+    },
+    {
+      "nodeId": "env3",
+      "nodeInfo": "Java 17",
+      "threats": [
+        {
+          "id": "T-ENV3-001",
+          "name": "Deserialization Attack",
+          "description": "Java deserialization leading to RCE",
+          "category": "compromise",
+          "likelihood": 2,
+          "impact": 5
+        },
+        {
+          "id": "T-ENV3-002",
+          "name": "JNDI Injection",
+          "description": "JNDI lookup exploitation (Log4Shell style)",
+          "category": "compromise",
+          "likelihood": 2,
+          "impact": 5
+        },
+        {
+          "id": "T-ENV3-003",
+          "name": "Memory Exhaustion",
+          "description": "JVM heap/metaspace exhaustion",
+          "category": "availability",
+          "likelihood": 3,
+          "impact": 3
+        },
+        {
+          "id": "T-ENV3-004",
+          "name": "Class Loading Attack",
+          "description": "Malicious class loading exploitation",
+          "category": "compromise",
+          "likelihood": 2,
+          "impact": 4
+        }
+      ],
+      "controls": [
+        {
+          "id": "C-ENV3-001",
+          "name": "Serialization Filter",
+          "type": "preventive",
+          "effectiveness": 90,
+          "mitigates": ["T-ENV3-001"]
+        },
+        {
+          "id": "C-ENV3-002",
+          "name": "JNDI Restrictions",
+          "type": "preventive",
+          "effectiveness": 95,
+          "mitigates": ["T-ENV3-002"]
+        },
+        {
+          "id": "C-ENV3-003",
+          "name": "JVM Tuning",
+          "type": "preventive",
+          "effectiveness": 80,
+          "mitigates": ["T-ENV3-003"]
+        },
+        {
+          "id": "C-ENV3-004",
+          "name": "Security Manager",
+          "type": "preventive",
+          "effectiveness": 85,
+          "mitigates": ["T-ENV3-004"]
+        }
+      ],
+      "vulnerabilities": [],
+      "riskScore": {
+        "inherent": 75,
+        "residual": 20,
+        "trend": "stable"
+      },
+      "metadata": {
+        "lastAssessed": "2024-12-12T11:00:00Z",
+        "owner": "backend-team",
+        "compliance": [],
+        "tags": ["runtime", "java", "jvm"]
+      }
+    },
+    {
+      "nodeId": "env4",
+      "nodeInfo": "Go 1.21",
+      "threats": [
+        {
+          "id": "T-ENV4-001",
+          "name": "Race Condition",
+          "description": "Goroutine race conditions causing data corruption",
+          "category": "integrity",
+          "likelihood": 3,
+          "impact": 3
+        },
+        {
+          "id": "T-ENV4-002",
+          "name": "Panic Propagation",
+          "description": "Unhandled panics crashing services",
+          "category": "availability",
+          "likelihood": 3,
+          "impact": 3
+        },
+        {
+          "id": "T-ENV4-003",
+          "name": "Memory Safety",
+          "description": "Unsafe pointer operations leading to vulnerabilities",
+          "category": "compromise",
+          "likelihood": 2,
+          "impact": 4
+        },
+        {
+          "id": "T-ENV4-004",
+          "name": "Module Vulnerabilities",
+          "description": "Vulnerable Go modules in dependencies",
+          "category": "compromise",
+          "likelihood": 3,
+          "impact": 3
+        }
+      ],
+      "controls": [
+        {
+          "id": "C-ENV4-001",
+          "name": "Race Detector",
+          "type": "detective",
+          "effectiveness": 85,
+          "mitigates": ["T-ENV4-001"]
+        },
+        {
+          "id": "C-ENV4-002",
+          "name": "Panic Recovery",
+          "type": "preventive",
+          "effectiveness": 80,
+          "mitigates": ["T-ENV4-002"]
+        },
+        {
+          "id": "C-ENV4-003",
+          "name": "Safe Code Review",
+          "type": "preventive",
+          "effectiveness": 75,
+          "mitigates": ["T-ENV4-003"]
+        },
+        {
+          "id": "C-ENV4-004",
+          "name": "Go Module Proxy",
+          "type": "preventive",
+          "effectiveness": 80,
+          "mitigates": ["T-ENV4-004"]
+        }
+      ],
+      "vulnerabilities": [],
+      "riskScore": {
+        "inherent": 60,
+        "residual": 20,
+        "trend": "stable"
+      },
+      "metadata": {
+        "lastAssessed": "2024-12-11T12:00:00Z",
+        "owner": "platform-team",
+        "compliance": [],
+        "tags": ["runtime", "golang", "performance"]
+      }
+    }
+  ]
+}

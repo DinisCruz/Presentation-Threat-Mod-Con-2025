@@ -1,0 +1,362 @@
+{
+  "layer": "application",
+  "description": "Threat models for application components",
+  "threatModels": [
+    {
+      "nodeId": "app1",
+      "nodeInfo": "PaymentService API",
+      "threats": [
+        {
+          "id": "T-APP1-001",
+          "name": "API Rate Limit Bypass",
+          "description": "Circumvention of rate limiting leading to resource exhaustion",
+          "category": "availability",
+          "likelihood": 3,
+          "impact": 3
+        },
+        {
+          "id": "T-APP1-002",
+          "name": "API Injection Attack",
+          "description": "SQL/NoSQL injection through API parameters",
+          "category": "compromise",
+          "likelihood": 3,
+          "impact": 5
+        },
+        {
+          "id": "T-APP1-003",
+          "name": "Broken API Authentication",
+          "description": "Weak or missing authentication on critical endpoints",
+          "category": "compromise",
+          "likelihood": 2,
+          "impact": 5
+        },
+        {
+          "id": "T-APP1-004",
+          "name": "Sensitive Data Exposure",
+          "description": "API responses leaking sensitive payment information",
+          "category": "data-breach",
+          "likelihood": 3,
+          "impact": 4
+        }
+      ],
+      "controls": [
+        {
+          "id": "C-APP1-001",
+          "name": "API Gateway",
+          "type": "preventive",
+          "effectiveness": 85,
+          "mitigates": ["T-APP1-001", "T-APP1-003"]
+        },
+        {
+          "id": "C-APP1-002",
+          "name": "Input Validation Framework",
+          "type": "preventive",
+          "effectiveness": 90,
+          "mitigates": ["T-APP1-002"]
+        },
+        {
+          "id": "C-APP1-003",
+          "name": "Response Filtering",
+          "type": "preventive",
+          "effectiveness": 80,
+          "mitigates": ["T-APP1-004"]
+        }
+      ],
+      "vulnerabilities": [],
+      "riskScore": {
+        "inherent": 75,
+        "residual": 30,
+        "trend": "stable"
+      },
+      "metadata": {
+        "lastAssessed": "2024-12-14T10:00:00Z",
+        "owner": "payment-api-team",
+        "compliance": ["PCI-DSS", "OWASP"],
+        "tags": ["external-facing", "api", "payment"]
+      }
+    },
+    {
+      "nodeId": "app2",
+      "nodeInfo": "AuthService",
+      "threats": [
+        {
+          "id": "T-APP2-001",
+          "name": "Token Forgery",
+          "description": "Creation of valid tokens without proper authentication",
+          "category": "compromise",
+          "likelihood": 2,
+          "impact": 5
+        },
+        {
+          "id": "T-APP2-002",
+          "name": "Privilege Escalation",
+          "description": "Users gaining unauthorized elevated permissions",
+          "category": "compromise",
+          "likelihood": 2,
+          "impact": 5
+        },
+        {
+          "id": "T-APP2-003",
+          "name": "Service Unavailability",
+          "description": "Auth service downtime blocking all user access",
+          "category": "availability",
+          "likelihood": 2,
+          "impact": 5
+        },
+        {
+          "id": "T-APP2-004",
+          "name": "Brute Force Attack",
+          "description": "Password guessing attacks on login endpoints",
+          "category": "compromise",
+          "likelihood": 4,
+          "impact": 3
+        }
+      ],
+      "controls": [
+        {
+          "id": "C-APP2-001",
+          "name": "Token Signing Verification",
+          "type": "preventive",
+          "effectiveness": 95,
+          "mitigates": ["T-APP2-001"]
+        },
+        {
+          "id": "C-APP2-002",
+          "name": "RBAC Implementation",
+          "type": "preventive",
+          "effectiveness": 85,
+          "mitigates": ["T-APP2-002"]
+        },
+        {
+          "id": "C-APP2-003",
+          "name": "Auth Service Clustering",
+          "type": "preventive",
+          "effectiveness": 90,
+          "mitigates": ["T-APP2-003"]
+        },
+        {
+          "id": "C-APP2-004",
+          "name": "Account Lockout Policy",
+          "type": "preventive",
+          "effectiveness": 80,
+          "mitigates": ["T-APP2-004"]
+        }
+      ],
+      "vulnerabilities": [],
+      "riskScore": {
+        "inherent": 85,
+        "residual": 25,
+        "trend": "stable"
+      },
+      "metadata": {
+        "lastAssessed": "2024-12-13T11:30:00Z",
+        "owner": "identity-platform",
+        "compliance": ["OWASP", "SOC2"],
+        "tags": ["authentication", "critical", "zero-trust"]
+      }
+    },
+    {
+      "nodeId": "app3",
+      "nodeInfo": "OrderManagement",
+      "threats": [
+        {
+          "id": "T-APP3-001",
+          "name": "Race Condition",
+          "description": "Concurrent order modifications causing data inconsistency",
+          "category": "integrity",
+          "likelihood": 3,
+          "impact": 3
+        },
+        {
+          "id": "T-APP3-002",
+          "name": "Business Logic Bypass",
+          "description": "Circumvention of order validation rules",
+          "category": "integrity",
+          "likelihood": 3,
+          "impact": 3
+        },
+        {
+          "id": "T-APP3-003",
+          "name": "Event Stream Poisoning",
+          "description": "Malicious events in order processing stream",
+          "category": "integrity",
+          "likelihood": 2,
+          "impact": 4
+        }
+      ],
+      "controls": [
+        {
+          "id": "C-APP3-001",
+          "name": "Distributed Locking",
+          "type": "preventive",
+          "effectiveness": 85,
+          "mitigates": ["T-APP3-001"]
+        },
+        {
+          "id": "C-APP3-002",
+          "name": "Business Rule Engine",
+          "type": "preventive",
+          "effectiveness": 80,
+          "mitigates": ["T-APP3-002"]
+        },
+        {
+          "id": "C-APP3-003",
+          "name": "Event Validation",
+          "type": "preventive",
+          "effectiveness": 75,
+          "mitigates": ["T-APP3-003"]
+        }
+      ],
+      "vulnerabilities": [],
+      "riskScore": {
+        "inherent": 65,
+        "residual": 30,
+        "trend": "stable"
+      },
+      "metadata": {
+        "lastAssessed": "2024-12-12T14:00:00Z",
+        "owner": "order-team",
+        "compliance": ["SOX"],
+        "tags": ["event-driven", "business-logic"]
+      }
+    },
+    {
+      "nodeId": "app4",
+      "nodeInfo": "CustomerPortal",
+      "threats": [
+        {
+          "id": "T-APP4-001",
+          "name": "Cross-Site Scripting",
+          "description": "XSS vulnerabilities in customer-facing pages",
+          "category": "compromise",
+          "likelihood": 3,
+          "impact": 3
+        },
+        {
+          "id": "T-APP4-002",
+          "name": "CSRF Attack",
+          "description": "Cross-site request forgery on customer actions",
+          "category": "compromise",
+          "likelihood": 3,
+          "impact": 3
+        },
+        {
+          "id": "T-APP4-003",
+          "name": "Information Disclosure",
+          "description": "Exposure of customer data through UI elements",
+          "category": "data-breach",
+          "likelihood": 3,
+          "impact": 3
+        },
+        {
+          "id": "T-APP4-004",
+          "name": "Account Enumeration",
+          "description": "Discovery of valid customer accounts",
+          "category": "compromise",
+          "likelihood": 4,
+          "impact": 2
+        }
+      ],
+      "controls": [
+        {
+          "id": "C-APP4-001",
+          "name": "Content Security Policy",
+          "type": "preventive",
+          "effectiveness": 85,
+          "mitigates": ["T-APP4-001"]
+        },
+        {
+          "id": "C-APP4-002",
+          "name": "CSRF Tokens",
+          "type": "preventive",
+          "effectiveness": 90,
+          "mitigates": ["T-APP4-002"]
+        },
+        {
+          "id": "C-APP4-003",
+          "name": "Data Masking",
+          "type": "preventive",
+          "effectiveness": 80,
+          "mitigates": ["T-APP4-003"]
+        }
+      ],
+      "vulnerabilities": [],
+      "riskScore": {
+        "inherent": 70,
+        "residual": 25,
+        "trend": "decreasing"
+      },
+      "metadata": {
+        "lastAssessed": "2024-12-11T16:00:00Z",
+        "owner": "frontend-team",
+        "compliance": ["OWASP", "WCAG"],
+        "tags": ["customer-facing", "web", "public"]
+      }
+    },
+    {
+      "nodeId": "app5",
+      "nodeInfo": "NotificationService",
+      "threats": [
+        {
+          "id": "T-APP5-001",
+          "name": "Notification Spam",
+          "description": "Abuse of notification system for spam or phishing",
+          "category": "integrity",
+          "likelihood": 3,
+          "impact": 3
+        },
+        {
+          "id": "T-APP5-002",
+          "name": "Template Injection",
+          "description": "Code injection through notification templates",
+          "category": "compromise",
+          "likelihood": 2,
+          "impact": 4
+        },
+        {
+          "id": "T-APP5-003",
+          "name": "PII Leakage",
+          "description": "Personal information exposed in notifications",
+          "category": "data-breach",
+          "likelihood": 3,
+          "impact": 3
+        }
+      ],
+      "controls": [
+        {
+          "id": "C-APP5-001",
+          "name": "Rate Limiting",
+          "type": "preventive",
+          "effectiveness": 80,
+          "mitigates": ["T-APP5-001"]
+        },
+        {
+          "id": "C-APP5-002",
+          "name": "Template Sandboxing",
+          "type": "preventive",
+          "effectiveness": 85,
+          "mitigates": ["T-APP5-002"]
+        },
+        {
+          "id": "C-APP5-003",
+          "name": "Content Filtering",
+          "type": "preventive",
+          "effectiveness": 75,
+          "mitigates": ["T-APP5-003"]
+        }
+      ],
+      "vulnerabilities": [],
+      "riskScore": {
+        "inherent": 60,
+        "residual": 25,
+        "trend": "stable"
+      },
+      "metadata": {
+        "lastAssessed": "2024-12-10T09:00:00Z",
+        "owner": "communications-team",
+        "compliance": ["CAN-SPAM", "GDPR"],
+        "tags": ["messaging", "external-comms"]
+      }
+    }
+  ]
+}

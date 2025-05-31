@@ -10,35 +10,65 @@
             margin: 0;
             padding: 0;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #f8f9fa;
+            background: #f4f6fa;
             color: #1e293b;
             overflow: hidden;
+            font-size: 16px;  /* Base font size */
         }
 
-        #graph-container {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+        /* Main UI flex container */
+        .main-ui-container {
+            display: flex;
+            flex-direction: row;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* Graph canvas box */
+        .graph-box {
+            flex: 1 1 0;
+            background: white;
+            margin: 32px 0 32px 32px;
+            border-radius: 18px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+            position: relative;
+            overflow: hidden;
+            min-width: 0;
+            min-height: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 32px 0;
+        }
+
+        /* Subtle grid background for SVG */
+        #graph-container svg {
+            background-image: linear-gradient(0deg, #e5e7eb 1px, transparent 1px),
+                              linear-gradient(90deg, #e5e7eb 1px, transparent 1px);
+            background-size: 40px 40px;
         }
 
         /* Control Panels */
         .control-panel {
-            position: absolute;
+            position: relative;
             background: rgba(255, 255, 255, 0.98);
             backdrop-filter: blur(20px);
             border: 1px solid rgba(226, 232, 240, 1);
             border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+            padding: 24px 20px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.13);
+            font-size: 0.9em;
+            width: 220px;
+            min-width: 180px;
+            max-width: 240px;
+            margin: 32px 32px 32px 20px;
+            height: fit-content;
         }
 
         #controls {
-            top: 20px;
-            right: 20px;
-            width: 320px;
-            max-height: calc(100vh - 40px);
+            position: static;
+            width: 100%;
+            max-height: 90vh;
             overflow-y: auto;
         }
 
@@ -46,6 +76,12 @@
             bottom: 20px;
             left: 20px;
             width: 300px;
+        }
+
+        /* Divider between sections */
+        .divider {
+            border-top: 1.5px solid #e2e8f0;
+            margin: 18px 0 18px 0;
         }
 
         /* Layer filters */
@@ -74,21 +110,21 @@
         }
 
         .layer-filter input[type="checkbox"] {
-            width: 16px;
-            height: 16px;
-            margin-right: 10px;
+            width: 22px;
+            height: 22px;
+            margin-right: 12px;
             cursor: pointer;
             accent-color: #3b82f6;
         }
 
         .layer-name {
             flex-grow: 1;
-            font-size: 13px;
+            font-size: 1em;
             font-weight: 500;
         }
 
         .node-count {
-            font-size: 11px;
+            font-size: 0.9em;
             color: #94a3b8;
             background: rgba(226, 232, 240, 0.8);
             padding: 2px 8px;
@@ -108,7 +144,7 @@
             border: none;
             border-radius: 6px;
             color: white;
-            font-size: 13px;
+            font-size: 1em;
             font-weight: 500;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -140,7 +176,7 @@
         }
 
         .node-label {
-            font-size: 12px;
+            font-size: 1.8em;
             font-weight: 500;
             fill: #1e293b;
             text-anchor: middle;
@@ -182,7 +218,7 @@
             display: flex;
             align-items: center;
             margin: 6px 0;
-            font-size: 12px;
+            font-size: 14px;
         }
 
         .legend-line {
@@ -206,7 +242,7 @@
         /* Info items */
         .info-item {
             margin: 10px 0;
-            font-size: 13px;
+            font-size: 1em;
             display: flex;
             justify-content: space-between;
             padding: 8px;
@@ -237,26 +273,28 @@
         /* Zoom controls */
         .zoom-controls {
             position: absolute;
-            top: 20px;
-            left: 20px;
+            top: 32px;
+            left: 32px;
             background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.13);
             display: flex;
             flex-direction: column;
+            z-index: 10;
         }
 
         .zoom-button {
-            width: 40px;
-            height: 40px;
+            width: 52px;
+            height: 52px;
             border: none;
             background: white;
             cursor: pointer;
-            font-size: 20px;
+            font-size: 28px;
             transition: all 0.2s ease;
             display: flex;
             align-items: center;
             justify-content: center;
+            position: relative;
         }
 
         .zoom-button:hover {
@@ -264,12 +302,33 @@
         }
 
         .zoom-button:first-child {
-            border-radius: 8px 8px 0 0;
+            border-radius: 12px 12px 0 0;
             border-bottom: 1px solid #e2e8f0;
         }
 
         .zoom-button:last-child {
-            border-radius: 0 0 8px 8px;
+            border-radius: 0 0 12px 12px;
+        }
+
+        /* Tooltip for zoom buttons */
+        .zoom-tooltip {
+            position: absolute;
+            left: 60px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #1e293b;
+            color: #fff;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 1em;
+            opacity: 0;
+            pointer-events: none;
+            white-space: nowrap;
+            z-index: 100;
+            transition: opacity 0.2s;
+        }
+        .zoom-button:hover .zoom-tooltip {
+            opacity: 1;
         }
 
         /* Tooltip */
@@ -279,7 +338,7 @@
             background: rgba(30, 41, 59, 0.95);
             color: white;
             border-radius: 6px;
-            font-size: 12px;
+            font-size: 1.2em;
             pointer-events: none;
             opacity: 0;
             transition: opacity 0.3s;
@@ -292,94 +351,114 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 24px;
+            font-size: 2em;
             color: #3b82f6;
             font-weight: 500;
         }
 
         h3 {
             margin: 0 0 15px 0;
-            font-size: 16px;
+            font-size: 1.3em;
             color: #1e293b;
             font-weight: 600;
+        }
+
+        /* Smaller font for View Controls section */
+        #controls .view-controls-header {
+            font-size: 1.1em;
+        }
+        #controls .layout-buttons {
+            font-size: 0.95em;
+        }
+        #controls .layout-buttons .button {
+            font-size: 1em;
         }
     </style>
 </head>
 <body>
-    <div id="loading">Initializing 2D Graph...</div>
-    <div id="graph-container"></div>
-
-    <!-- Zoom Controls -->
-    <div class="zoom-controls">
-        <button class="zoom-button" onclick="zoomIn()">+</button>
-        <button class="zoom-button" onclick="zoomReset()">⟲</button>
-        <button class="zoom-button" onclick="zoomOut()">−</button>
-    </div>
-
-    <!-- Control Panel -->
-    <div id="controls" class="control-panel">
-        <h3>🎨 View Controls</h3>
-        
-        <div class="layout-buttons">
-            <button class="button active" onclick="setLayout('force', event)">Force</button>
-            <button class="button" onclick="setLayout('hierarchical', event)">Hierarchy</button>
-            <button class="button" onclick="setLayout('radial', event)">Radial</button>
-        </div>
-
-        <h3 style="margin-top: 20px;">📊 Layer Filters</h3>
-        <div id="layer-filters"></div>
-
-        <div style="margin-top: 20px;">
-            <button class="button secondary" onclick="showAllLayers()">Show All</button>
-            <button class="button secondary" onclick="hideAllLayers()">Hide All</button>
-        </div>
-
-        <div class="legend">
-            <h3>Connection Types</h3>
-            <div class="legend-item">
-                <div class="legend-line" style="background: #3b82f6;"></div>
-                <span>Parent-Child</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-line" style="background: #10b981;"></div>
-                <span>Data Flow</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-line" style="background: #f97316; background-image: repeating-linear-gradient(90deg, #f97316, #f97316 5px, transparent 5px, transparent 10px);"></div>
-                <span>Dependency</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-line" style="background: #8b5cf6;"></div>
-                <span>Authentication</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-line" style="background: #dc2626;"></div>
-                <span>Threat Path</span>
+    <div class="main-ui-container">
+        <div class="graph-box">
+            <div id="loading">Initializing 2D Graph...</div>
+            <div id="graph-container"></div>
+            <!-- Zoom Controls -->
+            <div class="zoom-controls">
+                <button class="zoom-button" onclick="zoomIn()">+
+                    <span class="zoom-tooltip">Zoom In</span>
+                </button>
+                <button class="zoom-button" onclick="zoomReset()">⟲
+                    <span class="zoom-tooltip">Reset Zoom</span>
+                </button>
+                <button class="zoom-button" onclick="zoomOut()">−
+                    <span class="zoom-tooltip">Zoom Out</span>
+                </button>
             </div>
         </div>
-
-        <div class="stats-section">
-            <h3>📈 Graph Statistics</h3>
-            <div class="info-item">
-                <span class="info-label">Total Nodes:</span>
-                <span class="info-value" id="total-nodes">0</span>
-            </div>
-            <div class="info-item">
-                <span class="info-label">Visible Nodes:</span>
-                <span class="info-value" id="visible-nodes">0</span>
-            </div>
-            <div class="info-item">
-                <span class="info-label">Connections:</span>
-                <span class="info-value" id="total-connections">0</span>
-            </div>
-            <div class="info-item">
-                <span class="info-label">Selected Node:</span>
-                <span class="info-value" id="selected-node">None</span>
+        <!-- Control Panel -->
+        <div id="controls" class="control-panel">
+            <h3 class="view-controls-header">🎨 View Controls</h3>
+            
+            <div class="layout-buttons">
+                <button class="button" onclick="setLayout('force', event)">Force</button>
+                <button class="button" onclick="setLayout('hierarchical', event)">Hierarchy</button>
+                <button class="button" onclick="setLayout('radial', event)">Radial</button>
             </div>
 
-            <div id="node-details" style="margin-top: 20px; display: none;">
-                <h3>Node Details</h3>
-                <div id="node-info"></div>
+            <div class="divider"></div>
+            <h3 style="margin-top: 20px;">📊 Layer Filters</h3>
+            <div id="layer-filters"></div>
+
+            <div style="margin-top: 20px;">
+                <button class="button secondary" onclick="showAllLayers()">Show All</button>
+                <button class="button secondary" onclick="hideAllLayers()">Hide All</button>
+            </div>
+
+            <div class="legend">
+                <h3>Connection Types</h3>
+                <div class="legend-item">
+                    <div class="legend-line" style="background: #3b82f6;"></div>
+                    <span>Parent-Child</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-line" style="background: #10b981;"></div>
+                    <span>Data Flow</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-line" style="background: #f97316; background-image: repeating-linear-gradient(90deg, #f97316, #f97316 5px, transparent 5px, transparent 10px);"></div>
+                    <span>Dependency</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-line" style="background: #8b5cf6;"></div>
+                    <span>Authentication</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-line" style="background: #dc2626;"></div>
+                    <span>Threat Path</span>
+                </div>
+            </div>
+
+            <div class="stats-section">
+                <h3>📈 Graph Statistics</h3>
+                <div class="info-item">
+                    <span class="info-label">Total Nodes:</span>
+                    <span class="info-value" id="total-nodes">0</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Visible Nodes:</span>
+                    <span class="info-value" id="visible-nodes">0</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Connections:</span>
+                    <span class="info-value" id="total-connections">0</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Selected Node:</span>
+                    <span class="info-value" id="selected-node">None</span>
+                </div>
+
+                <div id="node-details" style="margin-top: 20px; display: none;">
+                    <h3>Node Details</h3>
+                    <div id="node-info"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -752,7 +831,7 @@
                 .attr('class', 'node-label')
                 .attr('dy', 35)
                 .text(d => d.name)
-                .style('font-size', '11px');
+                .style('font-size', '18px');
 
             // Update positions on simulation tick
             simulation.on('tick', () => {

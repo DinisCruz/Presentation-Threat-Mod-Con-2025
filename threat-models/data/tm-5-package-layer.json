@@ -1,0 +1,470 @@
+{
+  "layer": "package",
+  "description": "Threat models for software packages and dependencies",
+  "threatModels": [
+    {
+      "nodeId": "pkg1",
+      "nodeInfo": "stripe-python 5.1.0",
+      "threats": [
+        {
+          "id": "T-PKG1-001",
+          "name": "Known CVE Vulnerability",
+          "description": "CVE-2024-1234 allows authentication bypass in Stripe API calls",
+          "category": "compromise",
+          "likelihood": 4,
+          "impact": 5,
+          "cve": "CVE-2024-1234"
+        },
+        {
+          "id": "T-PKG1-002",
+          "name": "Supply Chain Compromise",
+          "description": "Package repository compromise injecting malicious code",
+          "category": "integrity",
+          "likelihood": 1,
+          "impact": 5
+        },
+        {
+          "id": "T-PKG1-003",
+          "name": "Dependency Confusion",
+          "description": "Internal package name hijacked in public repository",
+          "category": "integrity",
+          "likelihood": 2,
+          "impact": 4
+        },
+        {
+          "id": "T-PKG1-004",
+          "name": "Outdated Dependencies",
+          "description": "Transitive dependencies with security vulnerabilities",
+          "category": "compromise",
+          "likelihood": 3,
+          "impact": 3
+        }
+      ],
+      "controls": [
+        {
+          "id": "C-PKG1-001",
+          "name": "Vulnerability Scanning",
+          "type": "detective",
+          "effectiveness": 90,
+          "mitigates": ["T-PKG1-001", "T-PKG1-004"]
+        },
+        {
+          "id": "C-PKG1-002",
+          "name": "Package Verification",
+          "type": "preventive",
+          "effectiveness": 80,
+          "mitigates": ["T-PKG1-002"]
+        },
+        {
+          "id": "C-PKG1-003",
+          "name": "Private Registry",
+          "type": "preventive",
+          "effectiveness": 85,
+          "mitigates": ["T-PKG1-003"]
+        }
+      ],
+      "vulnerabilities": [
+        {
+          "id": "CVE-2024-1234",
+          "severity": "critical",
+          "exploitable": true,
+          "patchAvailable": true
+        }
+      ],
+      "riskScore": {
+        "inherent": 85,
+        "residual": 35,
+        "trend": "increasing"
+      },
+      "metadata": {
+        "lastAssessed": "2024-12-15T09:00:00Z",
+        "owner": "platform-security",
+        "compliance": ["PCI-DSS"],
+        "tags": ["third-party", "payment", "critical"]
+      }
+    },
+    {
+      "nodeId": "pkg2",
+      "nodeInfo": "cryptography 41.0.5",
+      "threats": [
+        {
+          "id": "T-PKG2-001",
+          "name": "Cryptographic Weakness",
+          "description": "Implementation flaws in cryptographic algorithms",
+          "category": "compromise",
+          "likelihood": 1,
+          "impact": 5
+        },
+        {
+          "id": "T-PKG2-002",
+          "name": "Side-Channel Attack",
+          "description": "Timing attacks revealing cryptographic secrets",
+          "category": "data-breach",
+          "likelihood": 2,
+          "impact": 4
+        },
+        {
+          "id": "T-PKG2-003",
+          "name": "Outdated Algorithms",
+          "description": "Use of deprecated cryptographic algorithms",
+          "category": "compromise",
+          "likelihood": 2,
+          "impact": 4
+        }
+      ],
+      "controls": [
+        {
+          "id": "C-PKG2-001",
+          "name": "Security Audits",
+          "type": "detective",
+          "effectiveness": 85,
+          "mitigates": ["T-PKG2-001"]
+        },
+        {
+          "id": "C-PKG2-002",
+          "name": "Constant-Time Operations",
+          "type": "preventive",
+          "effectiveness": 80,
+          "mitigates": ["T-PKG2-002"]
+        },
+        {
+          "id": "C-PKG2-003",
+          "name": "Algorithm Allowlist",
+          "type": "preventive",
+          "effectiveness": 90,
+          "mitigates": ["T-PKG2-003"]
+        }
+      ],
+      "vulnerabilities": [],
+      "riskScore": {
+        "inherent": 70,
+        "residual": 20,
+        "trend": "stable"
+      },
+      "metadata": {
+        "lastAssessed": "2024-12-14T10:00:00Z",
+        "owner": "platform-security",
+        "compliance": ["FIPS-140-2"],
+        "tags": ["cryptography", "security-critical"]
+      }
+    },
+    {
+      "nodeId": "pkg3",
+      "nodeInfo": "payment-core",
+      "threats": [
+        {
+          "id": "T-PKG3-001",
+          "name": "Business Logic Flaw",
+          "description": "Vulnerabilities in payment processing logic",
+          "category": "integrity",
+          "likelihood": 3,
+          "impact": 4
+        },
+        {
+          "id": "T-PKG3-002",
+          "name": "Insider Threat",
+          "description": "Malicious code introduced by internal developer",
+          "category": "integrity",
+          "likelihood": 1,
+          "impact": 5
+        },
+        {
+          "id": "T-PKG3-003",
+          "name": "Code Quality Issues",
+          "description": "Bugs leading to security vulnerabilities",
+          "category": "compromise",
+          "likelihood": 3,
+          "impact": 3
+        }
+      ],
+      "controls": [
+        {
+          "id": "C-PKG3-001",
+          "name": "Code Review",
+          "type": "preventive",
+          "effectiveness": 85,
+          "mitigates": ["T-PKG3-001", "T-PKG3-002", "T-PKG3-003"]
+        },
+        {
+          "id": "C-PKG3-002",
+          "name": "SAST Scanning",
+          "type": "detective",
+          "effectiveness": 80,
+          "mitigates": ["T-PKG3-003"]
+        },
+        {
+          "id": "C-PKG3-003",
+          "name": "Business Logic Testing",
+          "type": "detective",
+          "effectiveness": 75,
+          "mitigates": ["T-PKG3-001"]
+        }
+      ],
+      "vulnerabilities": [],
+      "riskScore": {
+        "inherent": 65,
+        "residual": 25,
+        "trend": "stable"
+      },
+      "metadata": {
+        "lastAssessed": "2024-12-13T11:00:00Z",
+        "owner": "payment-team",
+        "compliance": ["PCI-DSS"],
+        "tags": ["internal", "payment", "business-critical"]
+      }
+    },
+    {
+      "nodeId": "pkg4",
+      "nodeInfo": "requests 2.31.0",
+      "threats": [
+        {
+          "id": "T-PKG4-001",
+          "name": "SSRF Vulnerability",
+          "description": "Server-side request forgery through URL manipulation",
+          "category": "compromise",
+          "likelihood": 3,
+          "impact": 4
+        },
+        {
+          "id": "T-PKG4-002",
+          "name": "Certificate Validation Bypass",
+          "description": "Improper SSL/TLS certificate validation",
+          "category": "compromise",
+          "likelihood": 2,
+          "impact": 4
+        },
+        {
+          "id": "T-PKG4-003",
+          "name": "HTTP Header Injection",
+          "description": "Injection attacks through HTTP headers",
+          "category": "compromise",
+          "likelihood": 2,
+          "impact": 3
+        }
+      ],
+      "controls": [
+        {
+          "id": "C-PKG4-001",
+          "name": "URL Validation",
+          "type": "preventive",
+          "effectiveness": 85,
+          "mitigates": ["T-PKG4-001"]
+        },
+        {
+          "id": "C-PKG4-002",
+          "name": "Certificate Pinning",
+          "type": "preventive",
+          "effectiveness": 90,
+          "mitigates": ["T-PKG4-002"]
+        },
+        {
+          "id": "C-PKG4-003",
+          "name": "Header Sanitization",
+          "type": "preventive",
+          "effectiveness": 80,
+          "mitigates": ["T-PKG4-003"]
+        }
+      ],
+      "vulnerabilities": [],
+      "riskScore": {
+        "inherent": 60,
+        "residual": 20,
+        "trend": "stable"
+      },
+      "metadata": {
+        "lastAssessed": "2024-12-12T14:00:00Z",
+        "owner": "platform-team",
+        "compliance": ["OWASP"],
+        "tags": ["third-party", "http-client", "common"]
+      }
+    },
+    {
+      "nodeId": "pkg5",
+      "nodeInfo": "pydantic 2.4.2",
+      "threats": [
+        {
+          "id": "T-PKG5-001",
+          "name": "Validation Bypass",
+          "description": "Circumvention of data validation rules",
+          "category": "integrity",
+          "likelihood": 2,
+          "impact": 3
+        },
+        {
+          "id": "T-PKG5-002",
+          "name": "ReDoS Attack",
+          "description": "Regular expression denial of service",
+          "category": "availability",
+          "likelihood": 2,
+          "impact": 3
+        },
+        {
+          "id": "T-PKG5-003",
+          "name": "Type Confusion",
+          "description": "Type coercion leading to security issues",
+          "category": "integrity",
+          "likelihood": 2,
+          "impact": 3
+        }
+      ],
+      "controls": [
+        {
+          "id": "C-PKG5-001",
+          "name": "Strict Mode",
+          "type": "preventive",
+          "effectiveness": 85,
+          "mitigates": ["T-PKG5-001", "T-PKG5-003"]
+        },
+        {
+          "id": "C-PKG5-002",
+          "name": "Regex Timeout",
+          "type": "preventive",
+          "effectiveness": 80,
+          "mitigates": ["T-PKG5-002"]
+        }
+      ],
+      "vulnerabilities": [],
+      "riskScore": {
+        "inherent": 50,
+        "residual": 20,
+        "trend": "stable"
+      },
+      "metadata": {
+        "lastAssessed": "2024-12-11T15:00:00Z",
+        "owner": "platform-team",
+        "compliance": [],
+        "tags": ["third-party", "validation", "data-integrity"]
+      }
+    },
+    {
+      "nodeId": "pkg6",
+      "nodeInfo": "jwt-auth",
+      "threats": [
+        {
+          "id": "T-PKG6-001",
+          "name": "Weak JWT Secret",
+          "description": "Predictable or weak JWT signing secret",
+          "category": "compromise",
+          "likelihood": 2,
+          "impact": 5
+        },
+        {
+          "id": "T-PKG6-002",
+          "name": "Algorithm Confusion",
+          "description": "JWT algorithm substitution attacks",
+          "category": "compromise",
+          "likelihood": 2,
+          "impact": 5
+        },
+        {
+          "id": "T-PKG6-003",
+          "name": "Token Information Disclosure",
+          "description": "Sensitive data exposed in JWT payload",
+          "category": "data-breach",
+          "likelihood": 3,
+          "impact": 3
+        }
+      ],
+      "controls": [
+        {
+          "id": "C-PKG6-001",
+          "name": "Strong Key Generation",
+          "type": "preventive",
+          "effectiveness": 95,
+          "mitigates": ["T-PKG6-001"]
+        },
+        {
+          "id": "C-PKG6-002",
+          "name": "Algorithm Whitelist",
+          "type": "preventive",
+          "effectiveness": 90,
+          "mitigates": ["T-PKG6-002"]
+        },
+        {
+          "id": "C-PKG6-003",
+          "name": "Payload Encryption",
+          "type": "preventive",
+          "effectiveness": 85,
+          "mitigates": ["T-PKG6-003"]
+        }
+      ],
+      "vulnerabilities": [],
+      "riskScore": {
+        "inherent": 75,
+        "residual": 20,
+        "trend": "stable"
+      },
+      "metadata": {
+        "lastAssessed": "2024-12-13T13:00:00Z",
+        "owner": "identity-team",
+        "compliance": ["OWASP"],
+        "tags": ["internal", "authentication", "jwt"]
+      }
+    },
+    {
+      "nodeId": "pkg7",
+      "nodeInfo": "redis-py",
+      "threats": [
+        {
+          "id": "T-PKG7-001",
+          "name": "Command Injection",
+          "description": "Redis command injection through unsanitized input",
+          "category": "compromise",
+          "likelihood": 2,
+          "impact": 4
+        },
+        {
+          "id": "T-PKG7-002",
+          "name": "Data Exposure",
+          "description": "Sensitive data stored unencrypted in Redis",
+          "category": "data-breach",
+          "likelihood": 3,
+          "impact": 3
+        },
+        {
+          "id": "T-PKG7-003",
+          "name": "Connection Pool Exhaustion",
+          "description": "DoS through connection pool depletion",
+          "category": "availability",
+          "likelihood": 3,
+          "impact": 2
+        }
+      ],
+      "controls": [
+        {
+          "id": "C-PKG7-001",
+          "name": "Command Sanitization",
+          "type": "preventive",
+          "effectiveness": 85,
+          "mitigates": ["T-PKG7-001"]
+        },
+        {
+          "id": "C-PKG7-002",
+          "name": "Data Encryption",
+          "type": "preventive",
+          "effectiveness": 80,
+          "mitigates": ["T-PKG7-002"]
+        },
+        {
+          "id": "C-PKG7-003",
+          "name": "Connection Limits",
+          "type": "preventive",
+          "effectiveness": 75,
+          "mitigates": ["T-PKG7-003"]
+        }
+      ],
+      "vulnerabilities": [],
+      "riskScore": {
+        "inherent": 55,
+        "residual": 20,
+        "trend": "stable"
+      },
+      "metadata": {
+        "lastAssessed": "2024-12-10T16:00:00Z",
+        "owner": "platform-team",
+        "compliance": [],
+        "tags": ["third-party", "cache", "session-store"]
+      }
+    }
+  ]
+}

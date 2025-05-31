@@ -1,0 +1,404 @@
+{
+  "layer": "class",
+  "description": "Threat models for class-level components",
+  "threatModels": [
+    {
+      "nodeId": "cls1",
+      "nodeInfo": "PaymentProcessor",
+      "threats": [
+        {
+          "id": "T-CLS1-001",
+          "name": "State Management Vulnerability",
+          "description": "Improper handling of payment processing state transitions",
+          "category": "integrity",
+          "likelihood": 3,
+          "impact": 4
+        },
+        {
+          "id": "T-CLS1-002",
+          "name": "Exception Information Leak",
+          "description": "Sensitive payment data exposed in error messages",
+          "category": "data-breach",
+          "likelihood": 3,
+          "impact": 3
+        },
+        {
+          "id": "T-CLS1-003",
+          "name": "Concurrency Issues",
+          "description": "Race conditions in concurrent payment processing",
+          "category": "integrity",
+          "likelihood": 2,
+          "impact": 4
+        },
+        {
+          "id": "T-CLS1-004",
+          "name": "Resource Exhaustion",
+          "description": "Memory leaks or unbounded resource consumption",
+          "category": "availability",
+          "likelihood": 2,
+          "impact": 3
+        }
+      ],
+      "controls": [
+        {
+          "id": "C-CLS3-001",
+          "name": "Input Validation",
+          "type": "preventive",
+          "effectiveness": 80,
+          "mitigates": ["T-CLS3-001"]
+        },
+        {
+          "id": "C-CLS3-002",
+          "name": "Threshold Tuning",
+          "type": "preventive",
+          "effectiveness": 75,
+          "mitigates": ["T-CLS3-002"]
+        },
+        {
+          "id": "C-CLS3-003",
+          "name": "Model Obfuscation",
+          "type": "preventive",
+          "effectiveness": 70,
+          "mitigates": ["T-CLS3-003"]
+        }
+      ],
+      "vulnerabilities": [],
+      "riskScore": {
+        "inherent": 65,
+        "residual": 30,
+        "trend": "increasing"
+      },
+      "metadata": {
+        "lastAssessed": "2024-12-12T11:00:00Z",
+        "owner": "ml-team",
+        "compliance": ["PCI-DSS"],
+        "tags": ["ml", "fraud", "adaptive"]
+      }
+    },
+    {
+      "nodeId": "cls4",
+      "nodeInfo": "PaymentRequest",
+      "threats": [
+        {
+          "id": "T-CLS4-001",
+          "name": "Input Validation Bypass",
+          "description": "Malformed payment requests bypassing validation",
+          "category": "integrity",
+          "likelihood": 3,
+          "impact": 3
+        },
+        {
+          "id": "T-CLS4-002",
+          "name": "Serialization Vulnerability",
+          "description": "Unsafe deserialization of payment data",
+          "category": "compromise",
+          "likelihood": 2,
+          "impact": 4
+        },
+        {
+          "id": "T-CLS4-003",
+          "name": "Data Type Confusion",
+          "description": "Type coercion leading to processing errors",
+          "category": "integrity",
+          "likelihood": 2,
+          "impact": 3
+        }
+      ],
+      "controls": [
+        {
+          "id": "C-CLS4-001",
+          "name": "Schema Validation",
+          "type": "preventive",
+          "effectiveness": 85,
+          "mitigates": ["T-CLS4-001", "T-CLS4-003"]
+        },
+        {
+          "id": "C-CLS4-002",
+          "name": "Safe Serialization",
+          "type": "preventive",
+          "effectiveness": 90,
+          "mitigates": ["T-CLS4-002"]
+        }
+      ],
+      "vulnerabilities": [],
+      "riskScore": {
+        "inherent": 60,
+        "residual": 20,
+        "trend": "stable"
+      },
+      "metadata": {
+        "lastAssessed": "2024-12-11T13:00:00Z",
+        "owner": "payment-dev",
+        "compliance": ["PCI-DSS"],
+        "tags": ["data-model", "input", "validation"]
+      }
+    },
+    {
+      "nodeId": "cls5",
+      "nodeInfo": "PaymentResponse",
+      "threats": [
+        {
+          "id": "T-CLS5-001",
+          "name": "Information Disclosure",
+          "description": "Sensitive data exposed in response objects",
+          "category": "data-breach",
+          "likelihood": 3,
+          "impact": 3
+        },
+        {
+          "id": "T-CLS5-002",
+          "name": "Response Tampering",
+          "description": "Modification of payment response data",
+          "category": "integrity",
+          "likelihood": 2,
+          "impact": 4
+        },
+        {
+          "id": "T-CLS5-003",
+          "name": "Status Manipulation",
+          "description": "Unauthorized changes to payment status",
+          "category": "integrity",
+          "likelihood": 2,
+          "impact": 4
+        }
+      ],
+      "controls": [
+        {
+          "id": "C-CLS5-001",
+          "name": "Data Masking",
+          "type": "preventive",
+          "effectiveness": 85,
+          "mitigates": ["T-CLS5-001"]
+        },
+        {
+          "id": "C-CLS5-002",
+          "name": "Response Signing",
+          "type": "preventive",
+          "effectiveness": 90,
+          "mitigates": ["T-CLS5-002", "T-CLS5-003"]
+        }
+      ],
+      "vulnerabilities": [],
+      "riskScore": {
+        "inherent": 60,
+        "residual": 20,
+        "trend": "stable"
+      },
+      "metadata": {
+        "lastAssessed": "2024-12-10T14:00:00Z",
+        "owner": "payment-dev",
+        "compliance": ["PCI-DSS"],
+        "tags": ["data-model", "output", "sensitive"]
+      }
+    },
+    {
+      "nodeId": "cls6",
+      "nodeInfo": "TokenManager",
+      "threats": [
+        {
+          "id": "T-CLS6-001",
+          "name": "Weak Token Generation",
+          "description": "Predictable or weak token generation algorithm",
+          "category": "compromise",
+          "likelihood": 2,
+          "impact": 5
+        },
+        {
+          "id": "T-CLS6-002",
+          "name": "Token Storage Vulnerability",
+          "description": "Insecure storage of authentication tokens",
+          "category": "data-breach",
+          "likelihood": 2,
+          "impact": 4
+        },
+        {
+          "id": "T-CLS6-003",
+          "name": "Token Lifecycle Issues",
+          "description": "Improper token expiration or revocation",
+          "category": "compromise",
+          "likelihood": 3,
+          "impact": 3
+        },
+        {
+          "id": "T-CLS6-004",
+          "name": "Token Reuse Attack",
+          "description": "Replay attacks using captured tokens",
+          "category": "compromise",
+          "likelihood": 3,
+          "impact": 4
+        }
+      ],
+      "controls": [
+        {
+          "id": "C-CLS6-001",
+          "name": "Cryptographic RNG",
+          "type": "preventive",
+          "effectiveness": 95,
+          "mitigates": ["T-CLS6-001"]
+        },
+        {
+          "id": "C-CLS6-002",
+          "name": "Secure Storage",
+          "type": "preventive",
+          "effectiveness": 85,
+          "mitigates": ["T-CLS6-002"]
+        },
+        {
+          "id": "C-CLS6-003",
+          "name": "Token Expiration",
+          "type": "preventive",
+          "effectiveness": 80,
+          "mitigates": ["T-CLS6-003", "T-CLS6-004"]
+        }
+      ],
+      "vulnerabilities": [],
+      "riskScore": {
+        "inherent": 75,
+        "residual": 25,
+        "trend": "stable"
+      },
+      "metadata": {
+        "lastAssessed": "2024-12-13T12:30:00Z",
+        "owner": "identity-dev",
+        "compliance": ["OWASP"],
+        "tags": ["authentication", "tokens", "cryptography"]
+      }
+    }
+  ]
+},
+      "controls": [
+        {
+          "id": "C-CLS1-001",
+          "name": "State Validation",
+          "type": "preventive",
+          "effectiveness": 85,
+          "mitigates": ["T-CLS1-001"]
+        },
+        {
+          "id": "C-CLS1-002",
+          "name": "Exception Sanitization",
+          "type": "preventive",
+          "effectiveness": 90,
+          "mitigates": ["T-CLS1-002"]
+        },
+        {
+          "id": "C-CLS1-003",
+          "name": "Thread Safety",
+          "type": "preventive",
+          "effectiveness": 80,
+          "mitigates": ["T-CLS1-003"]
+        },
+        {
+          "id": "C-CLS1-004",
+          "name": "Resource Limits",
+          "type": "preventive",
+          "effectiveness": 75,
+          "mitigates": ["T-CLS1-004"]
+        }
+      ],
+      "vulnerabilities": [],
+      "riskScore": {
+        "inherent": 70,
+        "residual": 25,
+        "trend": "stable"
+      },
+      "metadata": {
+        "lastAssessed": "2024-12-14T09:30:00Z",
+        "owner": "payment-dev",
+        "compliance": ["PCI-DSS"],
+        "tags": ["core-logic", "payment", "stateful"]
+      }
+    },
+    {
+      "nodeId": "cls2",
+      "nodeInfo": "CardValidator",
+      "threats": [
+        {
+          "id": "T-CLS2-001",
+          "name": "Validation Bypass",
+          "description": "Circumvention of card validation logic",
+          "category": "integrity",
+          "likelihood": 2,
+          "impact": 4
+        },
+        {
+          "id": "T-CLS2-002",
+          "name": "PCI Data Exposure",
+          "description": "Card data logged or stored improperly",
+          "category": "compliance",
+          "likelihood": 2,
+          "impact": 5
+        },
+        {
+          "id": "T-CLS2-003",
+          "name": "Timing Attack",
+          "description": "Card validation timing reveals information",
+          "category": "data-breach",
+          "likelihood": 2,
+          "impact": 3
+        }
+      ],
+      "controls": [
+        {
+          "id": "C-CLS2-001",
+          "name": "Strict Validation",
+          "type": "preventive",
+          "effectiveness": 90,
+          "mitigates": ["T-CLS2-001"]
+        },
+        {
+          "id": "C-CLS2-002",
+          "name": "PCI Compliance",
+          "type": "preventive",
+          "effectiveness": 95,
+          "mitigates": ["T-CLS2-002"]
+        },
+        {
+          "id": "C-CLS2-003",
+          "name": "Constant Time Operations",
+          "type": "preventive",
+          "effectiveness": 85,
+          "mitigates": ["T-CLS2-003"]
+        }
+      ],
+      "vulnerabilities": [],
+      "riskScore": {
+        "inherent": 75,
+        "residual": 20,
+        "trend": "stable"
+      },
+      "metadata": {
+        "lastAssessed": "2024-12-13T10:00:00Z",
+        "owner": "payment-dev",
+        "compliance": ["PCI-DSS"],
+        "tags": ["validation", "pci", "sensitive"]
+      }
+    },
+    {
+      "nodeId": "cls3",
+      "nodeInfo": "FraudDetector",
+      "threats": [
+        {
+          "id": "T-CLS3-001",
+          "name": "ML Model Manipulation",
+          "description": "Adversarial inputs to bypass fraud detection",
+          "category": "integrity",
+          "likelihood": 3,
+          "impact": 4
+        },
+        {
+          "id": "T-CLS3-002",
+          "name": "False Positive Flooding",
+          "description": "Triggering excessive false positives to disrupt service",
+          "category": "availability",
+          "likelihood": 2,
+          "impact": 3
+        },
+        {
+          "id": "T-CLS3-003",
+          "name": "Detection Logic Reverse Engineering",
+          "description": "Attackers learning fraud detection patterns",
+          "category": "integrity",
+          "likelihood": 3,
+          "impact": 3
+        }

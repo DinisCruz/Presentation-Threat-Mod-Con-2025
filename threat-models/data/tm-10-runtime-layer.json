@@ -1,0 +1,363 @@
+{
+  "layer": "runtime",
+  "description": "Threat models for runtime platform components",
+  "threatModels": [
+    {
+      "nodeId": "rt1",
+      "nodeInfo": "Lambda-Payment",
+      "threats": [
+        {
+          "id": "T-RT1-001",
+          "name": "Cold Start Exploitation",
+          "description": "Attacks during Lambda initialization phase",
+          "category": "compromise",
+          "likelihood": 2,
+          "impact": 3
+        },
+        {
+          "id": "T-RT1-002",
+          "name": "Function Timeout",
+          "description": "Long-running operations exceeding Lambda limits",
+          "category": "availability",
+          "likelihood": 3,
+          "impact": 3
+        },
+        {
+          "id": "T-RT1-003",
+          "name": "Environment Variable Exposure",
+          "description": "Secrets exposed through Lambda environment",
+          "category": "data-breach",
+          "likelihood": 2,
+          "impact": 4
+        },
+        {
+          "id": "T-RT1-004",
+          "name": "IAM Role Abuse",
+          "description": "Excessive permissions on Lambda execution role",
+          "category": "compromise",
+          "likelihood": 2,
+          "impact": 4
+        },
+        {
+          "id": "T-RT1-005",
+          "name": "Resource Exhaustion",
+          "description": "Memory or compute limits causing failures",
+          "category": "availability",
+          "likelihood": 3,
+          "impact": 2
+        }
+      ],
+      "controls": [
+        {
+          "id": "C-RT1-001",
+          "name": "Provisioned Concurrency",
+          "type": "preventive",
+          "effectiveness": 80,
+          "mitigates": ["T-RT1-001"]
+        },
+        {
+          "id": "C-RT1-002",
+          "name": "Timeout Configuration",
+          "type": "preventive",
+          "effectiveness": 85,
+          "mitigates": ["T-RT1-002"]
+        },
+        {
+          "id": "C-RT1-003",
+          "name": "Secrets Manager",
+          "type": "preventive",
+          "effectiveness": 90,
+          "mitigates": ["T-RT1-003"]
+        },
+        {
+          "id": "C-RT1-004",
+          "name": "Least Privilege IAM",
+          "type": "preventive",
+          "effectiveness": 85,
+          "mitigates": ["T-RT1-004"]
+        },
+        {
+          "id": "C-RT1-005",
+          "name": "Memory Monitoring",
+          "type": "detective",
+          "effectiveness": 75,
+          "mitigates": ["T-RT1-005"]
+        }
+      ],
+      "vulnerabilities": [],
+      "riskScore": {
+        "inherent": 65,
+        "residual": 20,
+        "trend": "stable"
+      },
+      "metadata": {
+        "lastAssessed": "2024-12-14T10:00:00Z",
+        "owner": "serverless-team",
+        "compliance": ["PCI-DSS"],
+        "tags": ["serverless", "lambda", "payment"]
+      }
+    },
+    {
+      "nodeId": "rt2",
+      "nodeInfo": "K8s-Auth-Pod",
+      "threats": [
+        {
+          "id": "T-RT2-001",
+          "name": "Container Escape",
+          "description": "Breaking out of container to access host",
+          "category": "compromise",
+          "likelihood": 2,
+          "impact": 5
+        },
+        {
+          "id": "T-RT2-002",
+          "name": "Pod Security Policy Bypass",
+          "description": "Circumvention of K8s security policies",
+          "category": "compromise",
+          "likelihood": 2,
+          "impact": 4
+        },
+        {
+          "id": "T-RT2-003",
+          "name": "Service Account Token Theft",
+          "description": "Stolen K8s service account credentials",
+          "category": "compromise",
+          "likelihood": 3,
+          "impact": 4
+        },
+        {
+          "id": "T-RT2-004",
+          "name": "Resource Starvation",
+          "description": "Pod consuming excessive cluster resources",
+          "category": "availability",
+          "likelihood": 3,
+          "impact": 3
+        },
+        {
+          "id": "T-RT2-005",
+          "name": "Network Policy Violation",
+          "description": "Unauthorized network access from pod",
+          "category": "compromise",
+          "likelihood": 2,
+          "impact": 4
+        }
+      ],
+      "controls": [
+        {
+          "id": "C-RT2-001",
+          "name": "Security Context",
+          "type": "preventive",
+          "effectiveness": 85,
+          "mitigates": ["T-RT2-001"]
+        },
+        {
+          "id": "C-RT2-002",
+          "name": "Pod Security Standards",
+          "type": "preventive",
+          "effectiveness": 80,
+          "mitigates": ["T-RT2-002"]
+        },
+        {
+          "id": "C-RT2-003",
+          "name": "RBAC Policies",
+          "type": "preventive",
+          "effectiveness": 85,
+          "mitigates": ["T-RT2-003"]
+        },
+        {
+          "id": "C-RT2-004",
+          "name": "Resource Quotas",
+          "type": "preventive",
+          "effectiveness": 90,
+          "mitigates": ["T-RT2-004"]
+        },
+        {
+          "id": "C-RT2-005",
+          "name": "Network Policies",
+          "type": "preventive",
+          "effectiveness": 85,
+          "mitigates": ["T-RT2-005"]
+        }
+      ],
+      "vulnerabilities": [
+        {
+          "id": "VULN-K8S-001",
+          "severity": "high",
+          "exploitable": false,
+          "patchAvailable": true
+        }
+      ],
+      "riskScore": {
+        "inherent": 75,
+        "residual": 25,
+        "trend": "stable"
+      },
+      "metadata": {
+        "lastAssessed": "2024-12-13T11:00:00Z",
+        "owner": "platform-ops",
+        "compliance": ["SOC2", "ISO27001"],
+        "tags": ["kubernetes", "container", "authentication"]
+      }
+    },
+    {
+      "nodeId": "rt3",
+      "nodeInfo": "Container-Orders",
+      "threats": [
+        {
+          "id": "T-RT3-001",
+          "name": "Image Vulnerability",
+          "description": "Known CVEs in container base image",
+          "category": "compromise",
+          "likelihood": 3,
+          "impact": 3
+        },
+        {
+          "id": "T-RT3-002",
+          "name": "Dockerfile Misconfiguration",
+          "description": "Insecure Dockerfile practices",
+          "category": "compromise",
+          "likelihood": 3,
+          "impact": 3
+        },
+        {
+          "id": "T-RT3-003",
+          "name": "Container Registry Compromise",
+          "description": "Malicious images pushed to registry",
+          "category": "integrity",
+          "likelihood": 2,
+          "impact": 4
+        },
+        {
+          "id": "T-RT3-004",
+          "name": "Runtime Drift",
+          "description": "Container configuration drift from baseline",
+          "category": "integrity",
+          "likelihood": 3,
+          "impact": 2
+        }
+      ],
+      "controls": [
+        {
+          "id": "C-RT3-001",
+          "name": "Image Scanning",
+          "type": "detective",
+          "effectiveness": 85,
+          "mitigates": ["T-RT3-001"]
+        },
+        {
+          "id": "C-RT3-002",
+          "name": "Dockerfile Linting",
+          "type": "preventive",
+          "effectiveness": 80,
+          "mitigates": ["T-RT3-002"]
+        },
+        {
+          "id": "C-RT3-003",
+          "name": "Image Signing",
+          "type": "preventive",
+          "effectiveness": 85,
+          "mitigates": ["T-RT3-003"]
+        },
+        {
+          "id": "C-RT3-004",
+          "name": "Runtime Protection",
+          "type": "detective",
+          "effectiveness": 75,
+          "mitigates": ["T-RT3-004"]
+        }
+      ],
+      "vulnerabilities": [],
+      "riskScore": {
+        "inherent": 60,
+        "residual": 20,
+        "trend": "stable"
+      },
+      "metadata": {
+        "lastAssessed": "2024-12-12T12:00:00Z",
+        "owner": "container-team",
+        "compliance": ["SOC2"],
+        "tags": ["container", "docker", "orders"]
+      }
+    },
+    {
+      "nodeId": "rt4",
+      "nodeInfo": "CloudRun-Notify",
+      "threats": [
+        {
+          "id": "T-RT4-001",
+          "name": "Autoscaling Attack",
+          "description": "Malicious traffic causing cost explosion",
+          "category": "availability",
+          "likelihood": 3,
+          "impact": 3
+        },
+        {
+          "id": "T-RT4-002",
+          "name": "Service Identity Compromise",
+          "description": "Cloud Run service account compromise",
+          "category": "compromise",
+          "likelihood": 2,
+          "impact": 4
+        },
+        {
+          "id": "T-RT4-003",
+          "name": "Cold Start Latency",
+          "description": "Notification delays due to cold starts",
+          "category": "availability",
+          "likelihood": 3,
+          "impact": 2
+        },
+        {
+          "id": "T-RT4-004",
+          "name": "Ingress Bypass",
+          "description": "Unauthorized access to Cloud Run service",
+          "category": "compromise",
+          "likelihood": 2,
+          "impact": 3
+        }
+      ],
+      "controls": [
+        {
+          "id": "C-RT4-001",
+          "name": "Scaling Limits",
+          "type": "preventive",
+          "effectiveness": 85,
+          "mitigates": ["T-RT4-001"]
+        },
+        {
+          "id": "C-RT4-002",
+          "name": "Workload Identity",
+          "type": "preventive",
+          "effectiveness": 85,
+          "mitigates": ["T-RT4-002"]
+        },
+        {
+          "id": "C-RT4-003",
+          "name": "Min Instances",
+          "type": "preventive",
+          "effectiveness": 80,
+          "mitigates": ["T-RT4-003"]
+        },
+        {
+          "id": "C-RT4-004",
+          "name": "Ingress Settings",
+          "type": "preventive",
+          "effectiveness": 90,
+          "mitigates": ["T-RT4-004"]
+        }
+      ],
+      "vulnerabilities": [],
+      "riskScore": {
+        "inherent": 55,
+        "residual": 20,
+        "trend": "stable"
+      },
+      "metadata": {
+        "lastAssessed": "2024-12-11T13:00:00Z",
+        "owner": "platform-team",
+        "compliance": [],
+        "tags": ["serverless", "gcp", "notifications"]
+      }
+    }
+  ]
+}

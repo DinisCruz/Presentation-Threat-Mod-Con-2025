@@ -1,0 +1,48 @@
+{
+  "layer": "compute",
+  "description": "Threat models for compute infrastructure components",
+  "threatModels": [
+    {
+      "nodeId": "cmp1",
+      "nodeInfo": "AWS us-east-1",
+      "threats": [
+        {
+          "id": "T-CMP1-001",
+          "name": "Region-Wide Outage",
+          "description": "AWS region experiencing complete service disruption",
+          "category": "availability",
+          "likelihood": 1,
+          "impact": 5
+        },
+        {
+          "id": "T-CMP1-002",
+          "name": "Account Compromise",
+          "description": "AWS root account or admin credentials stolen",
+          "category": "compromise",
+          "likelihood": 2,
+          "impact": 5
+        },
+        {
+          "id": "T-CMP1-003",
+          "name": "Data Residency Violation",
+          "description": "Data processed outside permitted geography",
+          "category": "compliance",
+          "likelihood": 2,
+          "impact": 4
+        },
+        {
+          "id": "T-CMP1-004",
+          "name": "Network Misconfiguration",
+          "description": "VPC/Security group misconfigurations exposing resources",
+          "category": "compromise",
+          "likelihood": 3,
+          "impact": 4
+        },
+        {
+          "id": "T-CMP1-005",
+          "name": "Cost Explosion",
+          "description": "Unexpected charges due to resource abuse",
+          "category": "availability",
+          "likelihood": 3,
+          "impact": 3
+        }

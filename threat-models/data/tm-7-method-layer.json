@@ -1,0 +1,434 @@
+{
+  "layer": "method",
+  "description": "Threat models for method-level components",
+  "threatModels": [
+    {
+      "nodeId": "mth1",
+      "nodeInfo": "process_payment()",
+      "threats": [
+        {
+          "id": "T-MTH1-001",
+          "name": "Input Validation Failure",
+          "description": "Insufficient validation of payment parameters",
+          "category": "integrity",
+          "likelihood": 3,
+          "impact": 4
+        },
+        {
+          "id": "T-MTH1-002",
+          "name": "Exception Handling Weakness",
+          "description": "Improper error handling revealing sensitive data",
+          "category": "data-breach",
+          "likelihood": 3,
+          "impact": 3
+        },
+        {
+          "id": "T-MTH1-003",
+          "name": "Transaction Atomicity Failure",
+          "description": "Partial transaction completion causing inconsistency",
+          "category": "integrity",
+          "likelihood": 2,
+          "impact": 4
+        },
+        {
+          "id": "T-MTH1-004",
+          "name": "Performance Bottleneck",
+          "description": "Method taking too long causing timeouts",
+          "category": "availability",
+          "likelihood": 3,
+          "impact": 3
+        }
+      ],
+      "controls": [
+        {
+          "id": "C-MTH1-001",
+          "name": "Parameter Validation",
+          "type": "preventive",
+          "effectiveness": 85,
+          "mitigates": ["T-MTH1-001"]
+        },
+        {
+          "id": "C-MTH1-002",
+          "name": "Try-Catch Blocks",
+          "type": "preventive",
+          "effectiveness": 80,
+          "mitigates": ["T-MTH1-002"]
+        },
+        {
+          "id": "C-MTH1-003",
+          "name": "Transaction Management",
+          "type": "preventive",
+          "effectiveness": 90,
+          "mitigates": ["T-MTH1-003"]
+        },
+        {
+          "id": "C-MTH1-004",
+          "name": "Method Timeout",
+          "type": "preventive",
+          "effectiveness": 75,
+          "mitigates": ["T-MTH1-004"]
+        }
+      ],
+      "vulnerabilities": [],
+      "riskScore": {
+        "inherent": 70,
+        "residual": 25,
+        "trend": "stable"
+      },
+      "metadata": {
+        "lastAssessed": "2024-12-14T10:30:00Z",
+        "owner": "payment-dev",
+        "compliance": ["PCI-DSS"],
+        "tags": ["core-method", "payment", "transaction"]
+      }
+    },
+    {
+      "nodeId": "mth2",
+      "nodeInfo": "validate_card_details()",
+      "threats": [
+        {
+          "id": "T-MTH2-001",
+          "name": "Luhn Check Bypass",
+          "description": "Circumvention of credit card validation algorithm",
+          "category": "integrity",
+          "likelihood": 2,
+          "impact": 4
+        },
+        {
+          "id": "T-MTH2-002",
+          "name": "PCI Data Logging",
+          "description": "Inadvertent logging of card details",
+          "category": "compliance",
+          "likelihood": 2,
+          "impact": 5
+        },
+        {
+          "id": "T-MTH2-003",
+          "name": "Timing Information Leak",
+          "description": "Validation timing reveals card validity",
+          "category": "data-breach",
+          "likelihood": 2,
+          "impact": 2
+        }
+      ],
+      "controls": [
+        {
+          "id": "C-MTH2-001",
+          "name": "Algorithm Verification",
+          "type": "preventive",
+          "effectiveness": 90,
+          "mitigates": ["T-MTH2-001"]
+        },
+        {
+          "id": "C-MTH2-002",
+          "name": "No-Log Annotation",
+          "type": "preventive",
+          "effectiveness": 95,
+          "mitigates": ["T-MTH2-002"]
+        },
+        {
+          "id": "C-MTH2-003",
+          "name": "Constant Time",
+          "type": "preventive",
+          "effectiveness": 85,
+          "mitigates": ["T-MTH2-003"]
+        }
+      ],
+      "vulnerabilities": [],
+      "riskScore": {
+        "inherent": 65,
+        "residual": 20,
+        "trend": "stable"
+      },
+      "metadata": {
+        "lastAssessed": "2024-12-13T11:00:00Z",
+        "owner": "payment-dev",
+        "compliance": ["PCI-DSS"],
+        "tags": ["validation", "pci", "sensitive"]
+      }
+    },
+    {
+      "nodeId": "mth3",
+      "nodeInfo": "check_fraud_score()",
+      "threats": [
+        {
+          "id": "T-MTH3-001",
+          "name": "Score Manipulation",
+          "description": "Attackers gaming the fraud scoring system",
+          "category": "integrity",
+          "likelihood": 3,
+          "impact": 3
+        },
+        {
+          "id": "T-MTH3-002",
+          "name": "ML Model Timeout",
+          "description": "Fraud check taking too long, bypassed",
+          "category": "availability",
+          "likelihood": 2,
+          "impact": 3
+        },
+        {
+          "id": "T-MTH3-003",
+          "name": "Feature Extraction Error",
+          "description": "Incorrect feature extraction leading to wrong scores",
+          "category": "integrity",
+          "likelihood": 2,
+          "impact": 3
+        }
+      ],
+      "controls": [
+        {
+          "id": "C-MTH3-001",
+          "name": "Score Validation",
+          "type": "preventive",
+          "effectiveness": 80,
+          "mitigates": ["T-MTH3-001"]
+        },
+        {
+          "id": "C-MTH3-002",
+          "name": "Timeout Fallback",
+          "type": "preventive",
+          "effectiveness": 85,
+          "mitigates": ["T-MTH3-002"]
+        },
+        {
+          "id": "C-MTH3-003",
+          "name": "Feature Validation",
+          "type": "preventive",
+          "effectiveness": 75,
+          "mitigates": ["T-MTH3-003"]
+        }
+      ],
+      "vulnerabilities": [],
+      "riskScore": {
+        "inherent": 60,
+        "residual": 25,
+        "trend": "stable"
+      },
+      "metadata": {
+        "lastAssessed": "2024-12-12T12:00:00Z",
+        "owner": "ml-team",
+        "compliance": ["PCI-DSS"],
+        "tags": ["ml", "fraud", "scoring"]
+      }
+    },
+    {
+      "nodeId": "mth4",
+      "nodeInfo": "encrypt_sensitive_data()",
+      "threats": [
+        {
+          "id": "T-MTH4-001",
+          "name": "Weak Encryption",
+          "description": "Use of weak or deprecated encryption algorithms",
+          "category": "compromise",
+          "likelihood": 1,
+          "impact": 5
+        },
+        {
+          "id": "T-MTH4-002",
+          "name": "Key Management Failure",
+          "description": "Improper handling of encryption keys",
+          "category": "compromise",
+          "likelihood": 2,
+          "impact": 5
+        },
+        {
+          "id": "T-MTH4-003",
+          "name": "IV Reuse",
+          "description": "Initialization vector reuse weakening encryption",
+          "category": "compromise",
+          "likelihood": 2,
+          "impact": 4
+        },
+        {
+          "id": "T-MTH4-004",
+          "name": "Padding Oracle",
+          "description": "Padding oracle attacks on encryption",
+          "category": "compromise",
+          "likelihood": 1,
+          "impact": 4
+        }
+      ],
+      "controls": [
+        {
+          "id": "C-MTH4-001",
+          "name": "Strong Algorithms",
+          "type": "preventive",
+          "effectiveness": 95,
+          "mitigates": ["T-MTH4-001"]
+        },
+        {
+          "id": "C-MTH4-002",
+          "name": "HSM Integration",
+          "type": "preventive",
+          "effectiveness": 90,
+          "mitigates": ["T-MTH4-002"]
+        },
+        {
+          "id": "C-MTH4-003",
+          "name": "Random IV",
+          "type": "preventive",
+          "effectiveness": 95,
+          "mitigates": ["T-MTH4-003"]
+        },
+        {
+          "id": "C-MTH4-004",
+          "name": "AEAD Cipher",
+          "type": "preventive",
+          "effectiveness": 90,
+          "mitigates": ["T-MTH4-004"]
+        }
+      ],
+      "vulnerabilities": [],
+      "riskScore": {
+        "inherent": 75,
+        "residual": 15,
+        "trend": "stable"
+      },
+      "metadata": {
+        "lastAssessed": "2024-12-13T14:00:00Z",
+        "owner": "security-team",
+        "compliance": ["PCI-DSS", "FIPS-140-2"],
+        "tags": ["cryptography", "sensitive", "core-security"]
+      }
+    },
+    {
+      "nodeId": "mth5",
+      "nodeInfo": "call_payment_gateway()",
+      "threats": [
+        {
+          "id": "T-MTH5-001",
+          "name": "API Injection",
+          "description": "Injection attacks through gateway API parameters",
+          "category": "compromise",
+          "likelihood": 3,
+          "impact": 4
+        },
+        {
+          "id": "T-MTH5-002",
+          "name": "Gateway Timeout",
+          "description": "External gateway timeouts causing failures",
+          "category": "availability",
+          "likelihood": 3,
+          "impact": 3
+        },
+        {
+          "id": "T-MTH5-003",
+          "name": "Response Tampering",
+          "description": "MITM attacks modifying gateway responses",
+          "category": "integrity",
+          "likelihood": 2,
+          "impact": 4
+        },
+        {
+          "id": "T-MTH5-004",
+          "name": "Rate Limit Exceeded",
+          "description": "Gateway rate limits causing rejections",
+          "category": "availability",
+          "likelihood": 3,
+          "impact": 2
+        }
+      ],
+      "controls": [
+        {
+          "id": "C-MTH5-001",
+          "name": "Input Sanitization",
+          "type": "preventive",
+          "effectiveness": 85,
+          "mitigates": ["T-MTH5-001"]
+        },
+        {
+          "id": "C-MTH5-002",
+          "name": "Retry Logic",
+          "type": "corrective",
+          "effectiveness": 80,
+          "mitigates": ["T-MTH5-002"]
+        },
+        {
+          "id": "C-MTH5-003",
+          "name": "Response Validation",
+          "type": "preventive",
+          "effectiveness": 85,
+          "mitigates": ["T-MTH5-003"]
+        },
+        {
+          "id": "C-MTH5-004",
+          "name": "Rate Limit Management",
+          "type": "preventive",
+          "effectiveness": 75,
+          "mitigates": ["T-MTH5-004"]
+        }
+      ],
+      "vulnerabilities": [],
+      "riskScore": {
+        "inherent": 70,
+        "residual": 25,
+        "trend": "stable"
+      },
+      "metadata": {
+        "lastAssessed": "2024-12-12T15:00:00Z",
+        "owner": "payment-dev",
+        "compliance": ["PCI-DSS"],
+        "tags": ["external-api", "gateway", "integration"]
+      }
+    },
+    {
+      "nodeId": "mth6",
+      "nodeInfo": "generate_token()",
+      "threats": [
+        {
+          "id": "T-MTH6-001",
+          "name": "Weak Token Generation",
+          "description": "Predictable token generation pattern",
+          "category": "compromise",
+          "likelihood": 2,
+          "impact": 5
+        },
+        {
+          "id": "T-MTH6-002",
+          "name": "Token Collision",
+          "description": "Duplicate tokens generated causing conflicts",
+          "category": "integrity",
+          "likelihood": 1,
+          "impact": 4
+        },
+        {
+          "id": "T-MTH6-003",
+          "name": "Entropy Depletion",
+          "description": "Running out of randomness for token generation",
+          "category": "availability",
+          "likelihood": 1,
+          "impact": 3
+        }
+      ],
+      "controls": [
+        {
+          "id": "C-MTH6-001",
+          "name": "CSPRNG Usage",
+          "type": "preventive",
+          "effectiveness": 95,
+          "mitigates": ["T-MTH6-001", "T-MTH6-003"]
+        },
+        {
+          "id": "C-MTH6-002",
+          "name": "Uniqueness Check",
+          "type": "preventive",
+          "effectiveness": 90,
+          "mitigates": ["T-MTH6-002"]
+        }
+      ],
+      "vulnerabilities": [],
+      "riskScore": {
+        "inherent": 65,
+        "residual": 15,
+        "trend": "stable"
+      },
+      "metadata": {
+        "lastAssessed": "2024-12-13T13:30:00Z",
+        "owner": "identity-dev",
+        "compliance": ["OWASP"],
+        "tags": ["authentication", "token-generation", "cryptography"]
+      }
+    }
+  ]
+}

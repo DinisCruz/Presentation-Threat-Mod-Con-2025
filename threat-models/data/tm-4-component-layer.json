@@ -1,0 +1,454 @@
+{
+  "layer": "component",
+  "description": "Threat models for application components",
+  "threatModels": [
+    {
+      "nodeId": "comp1",
+      "nodeInfo": "Payment Gateway",
+      "threats": [
+        {
+          "id": "T-COMP1-001",
+          "name": "Gateway API Key Exposure",
+          "description": "Hardcoded or leaked payment gateway credentials",
+          "category": "data-breach",
+          "likelihood": 2,
+          "impact": 5
+        },
+        {
+          "id": "T-COMP1-002",
+          "name": "Man-in-the-Middle",
+          "description": "Interception of payment gateway communications",
+          "category": "compromise",
+          "likelihood": 2,
+          "impact": 5
+        },
+        {
+          "id": "T-COMP1-003",
+          "name": "Gateway Timeout",
+          "description": "Slow response causing transaction failures",
+          "category": "availability",
+          "likelihood": 3,
+          "impact": 3
+        }
+      ],
+      "controls": [
+        {
+          "id": "C-COMP1-001",
+          "name": "Secrets Management",
+          "type": "preventive",
+          "effectiveness": 90,
+          "mitigates": ["T-COMP1-001"]
+        },
+        {
+          "id": "C-COMP1-002",
+          "name": "Certificate Pinning",
+          "type": "preventive",
+          "effectiveness": 85,
+          "mitigates": ["T-COMP1-002"]
+        },
+        {
+          "id": "C-COMP1-003",
+          "name": "Circuit Breaker",
+          "type": "preventive",
+          "effectiveness": 80,
+          "mitigates": ["T-COMP1-003"]
+        }
+      ],
+      "vulnerabilities": [],
+      "riskScore": {
+        "inherent": 75,
+        "residual": 25,
+        "trend": "stable"
+      },
+      "metadata": {
+        "lastAssessed": "2024-12-14T11:00:00Z",
+        "owner": "payment-platform",
+        "compliance": ["PCI-DSS"],
+        "tags": ["external-dependency", "payment-critical"]
+      }
+    },
+    {
+      "nodeId": "comp2",
+      "nodeInfo": "Transaction Validator",
+      "threats": [
+        {
+          "id": "T-COMP2-001",
+          "name": "Validation Bypass",
+          "description": "Circumvention of transaction validation rules",
+          "category": "integrity",
+          "likelihood": 3,
+          "impact": 4
+        },
+        {
+          "id": "T-COMP2-002",
+          "name": "Logic Bomb",
+          "description": "Malicious code triggering on specific conditions",
+          "category": "integrity",
+          "likelihood": 1,
+          "impact": 5
+        },
+        {
+          "id": "T-COMP2-003",
+          "name": "Performance Degradation",
+          "description": "Complex validation rules causing slowdowns",
+          "category": "availability",
+          "likelihood": 3,
+          "impact": 2
+        }
+      ],
+      "controls": [
+        {
+          "id": "C-COMP2-001",
+          "name": "Rule Engine Testing",
+          "type": "preventive",
+          "effectiveness": 85,
+          "mitigates": ["T-COMP2-001"]
+        },
+        {
+          "id": "C-COMP2-002",
+          "name": "Code Review Process",
+          "type": "detective",
+          "effectiveness": 80,
+          "mitigates": ["T-COMP2-002"]
+        },
+        {
+          "id": "C-COMP2-003",
+          "name": "Performance Monitoring",
+          "type": "detective",
+          "effectiveness": 75,
+          "mitigates": ["T-COMP2-003"]
+        }
+      ],
+      "vulnerabilities": [],
+      "riskScore": {
+        "inherent": 65,
+        "residual": 25,
+        "trend": "stable"
+      },
+      "metadata": {
+        "lastAssessed": "2024-12-13T15:00:00Z",
+        "owner": "payment-platform",
+        "compliance": ["PCI-DSS"],
+        "tags": ["business-logic", "validation"]
+      }
+    },
+    {
+      "nodeId": "comp3",
+      "nodeInfo": "Fraud Detector",
+      "threats": [
+        {
+          "id": "T-COMP3-001",
+          "name": "ML Model Poisoning",
+          "description": "Adversarial inputs degrading fraud detection accuracy",
+          "category": "integrity",
+          "likelihood": 2,
+          "impact": 4
+        },
+        {
+          "id": "T-COMP3-002",
+          "name": "False Positive Storm",
+          "description": "Legitimate transactions blocked en masse",
+          "category": "availability",
+          "likelihood": 2,
+          "impact": 4
+        },
+        {
+          "id": "T-COMP3-003",
+          "name": "Model Reverse Engineering",
+          "description": "Attackers learning to bypass fraud detection",
+          "category": "integrity",
+          "likelihood": 3,
+          "impact": 3
+        }
+      ],
+      "controls": [
+        {
+          "id": "C-COMP3-001",
+          "name": "Model Monitoring",
+          "type": "detective",
+          "effectiveness": 80,
+          "mitigates": ["T-COMP3-001", "T-COMP3-002"]
+        },
+        {
+          "id": "C-COMP3-002",
+          "name": "Model Versioning",
+          "type": "preventive",
+          "effectiveness": 75,
+          "mitigates": ["T-COMP3-001"]
+        },
+        {
+          "id": "C-COMP3-003",
+          "name": "Model Obfuscation",
+          "type": "preventive",
+          "effectiveness": 70,
+          "mitigates": ["T-COMP3-003"]
+        }
+      ],
+      "vulnerabilities": [],
+      "riskScore": {
+        "inherent": 70,
+        "residual": 30,
+        "trend": "increasing"
+      },
+      "metadata": {
+        "lastAssessed": "2024-12-12T10:00:00Z",
+        "owner": "ml-platform",
+        "compliance": ["PCI-DSS"],
+        "tags": ["machine-learning", "fraud", "adaptive"]
+      }
+    },
+    {
+      "nodeId": "comp4",
+      "nodeInfo": "Auth Token Manager",
+      "threats": [
+        {
+          "id": "T-COMP4-001",
+          "name": "Token Leakage",
+          "description": "Authentication tokens exposed in logs or errors",
+          "category": "data-breach",
+          "likelihood": 3,
+          "impact": 4
+        },
+        {
+          "id": "T-COMP4-002",
+          "name": "Token Replay Attack",
+          "description": "Reuse of captured authentication tokens",
+          "category": "compromise",
+          "likelihood": 3,
+          "impact": 4
+        },
+        {
+          "id": "T-COMP4-003",
+          "name": "Weak Token Generation",
+          "description": "Predictable or weak token generation algorithm",
+          "category": "compromise",
+          "likelihood": 2,
+          "impact": 5
+        }
+      ],
+      "controls": [
+        {
+          "id": "C-COMP4-001",
+          "name": "Token Sanitization",
+          "type": "preventive",
+          "effectiveness": 85,
+          "mitigates": ["T-COMP4-001"]
+        },
+        {
+          "id": "C-COMP4-002",
+          "name": "Token Expiration",
+          "type": "preventive",
+          "effectiveness": 80,
+          "mitigates": ["T-COMP4-002"]
+        },
+        {
+          "id": "C-COMP4-003",
+          "name": "Cryptographic RNG",
+          "type": "preventive",
+          "effectiveness": 95,
+          "mitigates": ["T-COMP4-003"]
+        }
+      ],
+      "vulnerabilities": [],
+      "riskScore": {
+        "inherent": 75,
+        "residual": 25,
+        "trend": "stable"
+      },
+      "metadata": {
+        "lastAssessed": "2024-12-13T12:00:00Z",
+        "owner": "identity-platform",
+        "compliance": ["OWASP"],
+        "tags": ["authentication", "tokens", "cryptography"]
+      }
+    },
+    {
+      "nodeId": "comp5",
+      "nodeInfo": "Session Handler",
+      "threats": [
+        {
+          "id": "T-COMP5-001",
+          "name": "Session Fixation",
+          "description": "Forcing users to use attacker-controlled sessions",
+          "category": "compromise",
+          "likelihood": 2,
+          "impact": 4
+        },
+        {
+          "id": "T-COMP5-002",
+          "name": "Session Data Tampering",
+          "description": "Modification of session data in storage",
+          "category": "integrity",
+          "likelihood": 2,
+          "impact": 4
+        },
+        {
+          "id": "T-COMP5-003",
+          "name": "Session Store Failure",
+          "description": "Redis/session store unavailability",
+          "category": "availability",
+          "likelihood": 2,
+          "impact": 3
+        }
+      ],
+      "controls": [
+        {
+          "id": "C-COMP5-001",
+          "name": "Session Regeneration",
+          "type": "preventive",
+          "effectiveness": 85,
+          "mitigates": ["T-COMP5-001"]
+        },
+        {
+          "id": "C-COMP5-002",
+          "name": "Session Encryption",
+          "type": "preventive",
+          "effectiveness": 90,
+          "mitigates": ["T-COMP5-002"]
+        },
+        {
+          "id": "C-COMP5-003",
+          "name": "Session Store HA",
+          "type": "preventive",
+          "effectiveness": 85,
+          "mitigates": ["T-COMP5-003"]
+        }
+      ],
+      "vulnerabilities": [],
+      "riskScore": {
+        "inherent": 65,
+        "residual": 20,
+        "trend": "stable"
+      },
+      "metadata": {
+        "lastAssessed": "2024-12-11T14:00:00Z",
+        "owner": "identity-platform",
+        "compliance": ["OWASP"],
+        "tags": ["session-management", "state"]
+      }
+    },
+    {
+      "nodeId": "comp6",
+      "nodeInfo": "Order Processor",
+      "threats": [
+        {
+          "id": "T-COMP6-001",
+          "name": "Order Duplication",
+          "description": "Processing the same order multiple times",
+          "category": "integrity",
+          "likelihood": 3,
+          "impact": 3
+        },
+        {
+          "id": "T-COMP6-002",
+          "name": "Workflow Manipulation",
+          "description": "Skipping required order processing steps",
+          "category": "integrity",
+          "likelihood": 2,
+          "impact": 3
+        },
+        {
+          "id": "T-COMP6-003",
+          "name": "State Corruption",
+          "description": "Invalid order state transitions",
+          "category": "integrity",
+          "likelihood": 2,
+          "impact": 3
+        }
+      ],
+      "controls": [
+        {
+          "id": "C-COMP6-001",
+          "name": "Idempotency Keys",
+          "type": "preventive",
+          "effectiveness": 90,
+          "mitigates": ["T-COMP6-001"]
+        },
+        {
+          "id": "C-COMP6-002",
+          "name": "State Machine Validation",
+          "type": "preventive",
+          "effectiveness": 85,
+          "mitigates": ["T-COMP6-002", "T-COMP6-003"]
+        }
+      ],
+      "vulnerabilities": [],
+      "riskScore": {
+        "inherent": 60,
+        "residual": 20,
+        "trend": "stable"
+      },
+      "metadata": {
+        "lastAssessed": "2024-12-10T11:00:00Z",
+        "owner": "order-team",
+        "compliance": ["SOX"],
+        "tags": ["workflow", "state-management"]
+      }
+    },
+    {
+      "nodeId": "comp7",
+      "nodeInfo": "Inventory Manager",
+      "threats": [
+        {
+          "id": "T-COMP7-001",
+          "name": "Inventory Manipulation",
+          "description": "Unauthorized changes to inventory levels",
+          "category": "integrity",
+          "likelihood": 2,
+          "impact": 3
+        },
+        {
+          "id": "T-COMP7-002",
+          "name": "Race Condition",
+          "description": "Concurrent updates causing inventory discrepancies",
+          "category": "integrity",
+          "likelihood": 3,
+          "impact": 3
+        },
+        {
+          "id": "T-COMP7-003",
+          "name": "Inventory Data Leak",
+          "description": "Exposure of inventory levels to competitors",
+          "category": "data-breach",
+          "likelihood": 2,
+          "impact": 2
+        }
+      ],
+      "controls": [
+        {
+          "id": "C-COMP7-001",
+          "name": "Access Control",
+          "type": "preventive",
+          "effectiveness": 85,
+          "mitigates": ["T-COMP7-001"]
+        },
+        {
+          "id": "C-COMP7-002",
+          "name": "Optimistic Locking",
+          "type": "preventive",
+          "effectiveness": 80,
+          "mitigates": ["T-COMP7-002"]
+        },
+        {
+          "id": "C-COMP7-003",
+          "name": "API Rate Limiting",
+          "type": "preventive",
+          "effectiveness": 75,
+          "mitigates": ["T-COMP7-003"]
+        }
+      ],
+      "vulnerabilities": [],
+      "riskScore": {
+        "inherent": 55,
+        "residual": 20,
+        "trend": "stable"
+      },
+      "metadata": {
+        "lastAssessed": "2024-12-09T13:00:00Z",
+        "owner": "inventory-team",
+        "compliance": ["SOX"],
+        "tags": ["inventory", "data-integrity"]
+      }
+    }
+  ]
+}

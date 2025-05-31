@@ -1,0 +1,418 @@
+{
+  "layer": "code",
+  "description": "Threat models for source code line components",
+  "threatModels": [
+    {
+      "nodeId": "code1",
+      "nodeInfo": "Line 142: tokenize()",
+      "threats": [
+        {
+          "id": "T-CODE1-001",
+          "name": "Tokenization Bypass",
+          "description": "Direct card data usage bypassing tokenization",
+          "category": "compliance",
+          "likelihood": 2,
+          "impact": 5
+        },
+        {
+          "id": "T-CODE1-002",
+          "name": "Token Generation Failure",
+          "description": "Tokenization service unavailable or failing",
+          "category": "availability",
+          "likelihood": 2,
+          "impact": 3
+        },
+        {
+          "id": "T-CODE1-003",
+          "name": "Memory Leak",
+          "description": "Card data remaining in memory after tokenization",
+          "category": "data-breach",
+          "likelihood": 3,
+          "impact": 4
+        }
+      ],
+      "controls": [
+        {
+          "id": "C-CODE1-001",
+          "name": "Mandatory Tokenization",
+          "type": "preventive",
+          "effectiveness": 90,
+          "mitigates": ["T-CODE1-001"]
+        },
+        {
+          "id": "C-CODE1-002",
+          "name": "Fallback Handling",
+          "type": "corrective",
+          "effectiveness": 80,
+          "mitigates": ["T-CODE1-002"]
+        },
+        {
+          "id": "C-CODE1-003",
+          "name": "Memory Clearing",
+          "type": "preventive",
+          "effectiveness": 85,
+          "mitigates": ["T-CODE1-003"]
+        }
+      ],
+      "vulnerabilities": [],
+      "riskScore": {
+        "inherent": 70,
+        "residual": 20,
+        "trend": "stable"
+      },
+      "metadata": {
+        "lastAssessed": "2024-12-14T11:30:00Z",
+        "owner": "payment-dev",
+        "compliance": ["PCI-DSS"],
+        "tags": ["tokenization", "pci", "sensitive"]
+      }
+    },
+    {
+      "nodeId": "code2",
+      "nodeInfo": "Line 145: calculate_risk()",
+      "threats": [
+        {
+          "id": "T-CODE2-001",
+          "name": "Risk Score Manipulation",
+          "description": "Integer overflow/underflow in risk calculation",
+          "category": "integrity",
+          "likelihood": 2,
+          "impact": 3
+        },
+        {
+          "id": "T-CODE2-002",
+          "name": "Division by Zero",
+          "description": "Risk calculation causing application crash",
+          "category": "availability",
+          "likelihood": 2,
+          "impact": 3
+        },
+        {
+          "id": "T-CODE2-003",
+          "name": "Feature Injection",
+          "description": "Malicious input affecting risk features",
+          "category": "integrity",
+          "likelihood": 3,
+          "impact": 3
+        }
+      ],
+      "controls": [
+        {
+          "id": "C-CODE2-001",
+          "name": "Bounds Checking",
+          "type": "preventive",
+          "effectiveness": 85,
+          "mitigates": ["T-CODE2-001"]
+        },
+        {
+          "id": "C-CODE2-002",
+          "name": "Safe Division",
+          "type": "preventive",
+          "effectiveness": 90,
+          "mitigates": ["T-CODE2-002"]
+        },
+        {
+          "id": "C-CODE2-003",
+          "name": "Input Validation",
+          "type": "preventive",
+          "effectiveness": 80,
+          "mitigates": ["T-CODE2-003"]
+        }
+      ],
+      "vulnerabilities": [],
+      "riskScore": {
+        "inherent": 55,
+        "residual": 20,
+        "trend": "stable"
+      },
+      "metadata": {
+        "lastAssessed": "2024-12-13T12:00:00Z",
+        "owner": "ml-team",
+        "compliance": [],
+        "tags": ["calculation", "risk-scoring", "ml"]
+      }
+    },
+    {
+      "nodeId": "code3",
+      "nodeInfo": "Line 148: fraud_check",
+      "threats": [
+        {
+          "id": "T-CODE3-001",
+          "name": "Threshold Bypass",
+          "description": "Hardcoded threshold being manipulated",
+          "category": "integrity",
+          "likelihood": 2,
+          "impact": 4
+        },
+        {
+          "id": "T-CODE3-002",
+          "name": "Boolean Logic Error",
+          "description": "Incorrect fraud check logic allowing bypass",
+          "category": "integrity",
+          "likelihood": 2,
+          "impact": 4
+        },
+        {
+          "id": "T-CODE3-003",
+          "name": "Check Skipping",
+          "description": "Fraud check being skipped under conditions",
+          "category": "integrity",
+          "likelihood": 2,
+          "impact": 4
+        }
+      ],
+      "controls": [
+        {
+          "id": "C-CODE3-001",
+          "name": "Dynamic Thresholds",
+          "type": "preventive",
+          "effectiveness": 85,
+          "mitigates": ["T-CODE3-001"]
+        },
+        {
+          "id": "C-CODE3-002",
+          "name": "Logic Testing",
+          "type": "detective",
+          "effectiveness": 80,
+          "mitigates": ["T-CODE3-002"]
+        },
+        {
+          "id": "C-CODE3-003",
+          "name": "Mandatory Checks",
+          "type": "preventive",
+          "effectiveness": 90,
+          "mitigates": ["T-CODE3-003"]
+        }
+      ],
+      "vulnerabilities": [],
+      "riskScore": {
+        "inherent": 65,
+        "residual": 20,
+        "trend": "stable"
+      },
+      "metadata": {
+        "lastAssessed": "2024-12-12T13:00:00Z",
+        "owner": "payment-dev",
+        "compliance": ["PCI-DSS"],
+        "tags": ["fraud", "business-logic", "validation"]
+      }
+    },
+    {
+      "nodeId": "code4",
+      "nodeInfo": "Line 152: encrypt_data()",
+      "threats": [
+        {
+          "id": "T-CODE4-001",
+          "name": "Encryption Bypass",
+          "description": "Data sent unencrypted due to error",
+          "category": "data-breach",
+          "likelihood": 1,
+          "impact": 5
+        },
+        {
+          "id": "T-CODE4-002",
+          "name": "Weak Key Usage",
+          "description": "Hardcoded or weak encryption key",
+          "category": "compromise",
+          "likelihood": 2,
+          "impact": 5
+        },
+        {
+          "id": "T-CODE4-003",
+          "name": "Encryption Mode Error",
+          "description": "Incorrect encryption mode weakening security",
+          "category": "compromise",
+          "likelihood": 2,
+          "impact": 4
+        }
+      ],
+      "controls": [
+        {
+          "id": "C-CODE4-001",
+          "name": "Encryption Verification",
+          "type": "detective",
+          "effectiveness": 90,
+          "mitigates": ["T-CODE4-001"]
+        },
+        {
+          "id": "C-CODE4-002",
+          "name": "Key Management",
+          "type": "preventive",
+          "effectiveness": 95,
+          "mitigates": ["T-CODE4-002"]
+        },
+        {
+          "id": "C-CODE4-003",
+          "name": "Secure Defaults",
+          "type": "preventive",
+          "effectiveness": 85,
+          "mitigates": ["T-CODE4-003"]
+        }
+      ],
+      "vulnerabilities": [],
+      "riskScore": {
+        "inherent": 75,
+        "residual": 15,
+        "trend": "stable"
+      },
+      "metadata": {
+        "lastAssessed": "2024-12-13T14:30:00Z",
+        "owner": "security-team",
+        "compliance": ["PCI-DSS", "FIPS-140-2"],
+        "tags": ["encryption", "cryptography", "sensitive"]
+      }
+    },
+    {
+      "nodeId": "code5",
+      "nodeInfo": "Line 156: gateway.charge()",
+      "threats": [
+        {
+          "id": "T-CODE5-001",
+          "name": "SQL Injection",
+          "description": "User input concatenated into SQL query",
+          "category": "compromise",
+          "likelihood": 4,
+          "impact": 5
+        },
+        {
+          "id": "T-CODE5-002",
+          "name": "Command Injection",
+          "description": "OS command injection through gateway parameters",
+          "category": "compromise",
+          "likelihood": 3,
+          "impact": 5
+        },
+        {
+          "id": "T-CODE5-003",
+          "name": "XXE Injection",
+          "description": "XML external entity injection in gateway request",
+          "category": "compromise",
+          "likelihood": 2,
+          "impact": 4
+        },
+        {
+          "id": "T-CODE5-004",
+          "name": "SSRF Attack",
+          "description": "Server-side request forgery through gateway URL",
+          "category": "compromise",
+          "likelihood": 2,
+          "impact": 4
+        }
+      ],
+      "controls": [
+        {
+          "id": "C-CODE5-001",
+          "name": "Parameterized Queries",
+          "type": "preventive",
+          "effectiveness": 95,
+          "mitigates": ["T-CODE5-001"]
+        },
+        {
+          "id": "C-CODE5-002",
+          "name": "Input Sanitization",
+          "type": "preventive",
+          "effectiveness": 85,
+          "mitigates": ["T-CODE5-002"]
+        },
+        {
+          "id": "C-CODE5-003",
+          "name": "XML Parser Config",
+          "type": "preventive",
+          "effectiveness": 90,
+          "mitigates": ["T-CODE5-003"]
+        },
+        {
+          "id": "C-CODE5-004",
+          "name": "URL Validation",
+          "type": "preventive",
+          "effectiveness": 85,
+          "mitigates": ["T-CODE5-004"]
+        }
+      ],
+      "vulnerabilities": [
+        {
+          "id": "VULN-CODE-001",
+          "severity": "high",
+          "exploitable": true,
+          "patchAvailable": false
+        }
+      ],
+      "riskScore": {
+        "inherent": 85,
+        "residual": 25,
+        "trend": "increasing"
+      },
+      "metadata": {
+        "lastAssessed": "2024-12-14T15:00:00Z",
+        "owner": "payment-dev",
+        "compliance": ["OWASP", "PCI-DSS"],
+        "tags": ["injection", "critical", "external-api"]
+      }
+    },
+    {
+      "nodeId": "code6",
+      "nodeInfo": "Line 160: audit_log()",
+      "threats": [
+        {
+          "id": "T-CODE6-001",
+          "name": "Log Injection",
+          "description": "Malicious data injected into audit logs",
+          "category": "integrity",
+          "likelihood": 3,
+          "impact": 3
+        },
+        {
+          "id": "T-CODE6-002",
+          "name": "Sensitive Data Logging",
+          "description": "PCI data accidentally logged",
+          "category": "compliance",
+          "likelihood": 2,
+          "impact": 5
+        },
+        {
+          "id": "T-CODE6-003",
+          "name": "Log Tampering",
+          "description": "Audit logs modified after creation",
+          "category": "integrity",
+          "likelihood": 2,
+          "impact": 4
+        }
+      ],
+      "controls": [
+        {
+          "id": "C-CODE6-001",
+          "name": "Log Sanitization",
+          "type": "preventive",
+          "effectiveness": 85,
+          "mitigates": ["T-CODE6-001"]
+        },
+        {
+          "id": "C-CODE6-002",
+          "name": "Data Filtering",
+          "type": "preventive",
+          "effectiveness": 90,
+          "mitigates": ["T-CODE6-002"]
+        },
+        {
+          "id": "C-CODE6-003",
+          "name": "Log Integrity",
+          "type": "preventive",
+          "effectiveness": 85,
+          "mitigates": ["T-CODE6-003"]
+        }
+      ],
+      "vulnerabilities": [],
+      "riskScore": {
+        "inherent": 65,
+        "residual": 20,
+        "trend": "stable"
+      },
+      "metadata": {
+        "lastAssessed": "2024-12-11T16:00:00Z",
+        "owner": "platform-team",
+        "compliance": ["PCI-DSS", "SOX"],
+        "tags": ["logging", "audit", "compliance"]
+      }
+    }
+  ]
+}

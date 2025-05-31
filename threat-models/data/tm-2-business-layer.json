@@ -1,0 +1,275 @@
+{
+  "layer": "business",
+  "description": "Threat models for business function components",
+  "threatModels": [
+    {
+      "nodeId": "bf1",
+      "nodeInfo": "Payment Processing",
+      "threats": [
+        {
+          "id": "T-BF1-001",
+          "name": "Payment Fraud",
+          "description": "Fraudulent transactions leading to chargebacks and financial loss",
+          "category": "integrity",
+          "likelihood": 4,
+          "impact": 4
+        },
+        {
+          "id": "T-BF1-002",
+          "name": "PCI Compliance Violation",
+          "description": "Failure to meet PCI-DSS requirements resulting in fines",
+          "category": "compliance",
+          "likelihood": 2,
+          "impact": 5
+        },
+        {
+          "id": "T-BF1-003",
+          "name": "Transaction Manipulation",
+          "description": "Unauthorized modification of payment amounts or recipients",
+          "category": "integrity",
+          "likelihood": 2,
+          "impact": 5
+        },
+        {
+          "id": "T-BF1-004",
+          "name": "Payment System Outage",
+          "description": "Inability to process payments affecting revenue",
+          "category": "availability",
+          "likelihood": 2,
+          "impact": 5
+        }
+      ],
+      "controls": [
+        {
+          "id": "C-BF1-001",
+          "name": "Real-time Fraud Detection",
+          "type": "detective",
+          "effectiveness": 85,
+          "mitigates": ["T-BF1-001", "T-BF1-003"]
+        },
+        {
+          "id": "C-BF1-002",
+          "name": "PCI Compliance Program",
+          "type": "preventive",
+          "effectiveness": 95,
+          "mitigates": ["T-BF1-002"]
+        },
+        {
+          "id": "C-BF1-003",
+          "name": "Payment Gateway Redundancy",
+          "type": "preventive",
+          "effectiveness": 90,
+          "mitigates": ["T-BF1-004"]
+        }
+      ],
+      "vulnerabilities": [],
+      "riskScore": {
+        "inherent": 85,
+        "residual": 25,
+        "trend": "decreasing"
+      },
+      "metadata": {
+        "lastAssessed": "2024-12-14T09:00:00Z",
+        "owner": "payment-team",
+        "compliance": ["PCI-DSS", "SOX"],
+        "tags": ["revenue-critical", "high-risk"]
+      }
+    },
+    {
+      "nodeId": "bf2",
+      "nodeInfo": "User Authentication",
+      "threats": [
+        {
+          "id": "T-BF2-001",
+          "name": "Mass Account Compromise",
+          "description": "Large-scale breach of user credentials",
+          "category": "compromise",
+          "likelihood": 2,
+          "impact": 5
+        },
+        {
+          "id": "T-BF2-002",
+          "name": "Authentication Bypass",
+          "description": "Circumvention of authentication controls",
+          "category": "compromise",
+          "likelihood": 2,
+          "impact": 5
+        },
+        {
+          "id": "T-BF2-003",
+          "name": "Session Hijacking",
+          "description": "Unauthorized access through stolen session tokens",
+          "category": "compromise",
+          "likelihood": 3,
+          "impact": 4
+        },
+        {
+          "id": "T-BF2-004",
+          "name": "Identity Provider Failure",
+          "description": "SSO or authentication service unavailability",
+          "category": "availability",
+          "likelihood": 2,
+          "impact": 4
+        }
+      ],
+      "controls": [
+        {
+          "id": "C-BF2-001",
+          "name": "Adaptive Authentication",
+          "type": "preventive",
+          "effectiveness": 80,
+          "mitigates": ["T-BF2-001", "T-BF2-002"]
+        },
+        {
+          "id": "C-BF2-002",
+          "name": "Session Management",
+          "type": "preventive",
+          "effectiveness": 85,
+          "mitigates": ["T-BF2-003"]
+        },
+        {
+          "id": "C-BF2-003",
+          "name": "Multi-Provider Support",
+          "type": "preventive",
+          "effectiveness": 75,
+          "mitigates": ["T-BF2-004"]
+        }
+      ],
+      "vulnerabilities": [],
+      "riskScore": {
+        "inherent": 90,
+        "residual": 35,
+        "trend": "stable"
+      },
+      "metadata": {
+        "lastAssessed": "2024-12-13T11:00:00Z",
+        "owner": "identity-team",
+        "compliance": ["SOC2", "ISO27001"],
+        "tags": ["security-critical", "authentication"]
+      }
+    },
+    {
+      "nodeId": "bf3",
+      "nodeInfo": "Order Fulfillment",
+      "threats": [
+        {
+          "id": "T-BF3-001",
+          "name": "Order Manipulation",
+          "description": "Unauthorized changes to order details or status",
+          "category": "integrity",
+          "likelihood": 3,
+          "impact": 3
+        },
+        {
+          "id": "T-BF3-002",
+          "name": "Inventory Discrepancy",
+          "description": "Mismatch between system and actual inventory",
+          "category": "integrity",
+          "likelihood": 3,
+          "impact": 3
+        },
+        {
+          "id": "T-BF3-003",
+          "name": "Fulfillment Delays",
+          "description": "System issues causing shipping delays",
+          "category": "availability",
+          "likelihood": 3,
+          "impact": 2
+        }
+      ],
+      "controls": [
+        {
+          "id": "C-BF3-001",
+          "name": "Order Audit Trail",
+          "type": "detective",
+          "effectiveness": 90,
+          "mitigates": ["T-BF3-001"]
+        },
+        {
+          "id": "C-BF3-002",
+          "name": "Inventory Reconciliation",
+          "type": "detective",
+          "effectiveness": 80,
+          "mitigates": ["T-BF3-002"]
+        }
+      ],
+      "vulnerabilities": [],
+      "riskScore": {
+        "inherent": 60,
+        "residual": 25,
+        "trend": "stable"
+      },
+      "metadata": {
+        "lastAssessed": "2024-12-12T14:00:00Z",
+        "owner": "operations-team",
+        "compliance": ["SOX"],
+        "tags": ["operational", "medium-risk"]
+      }
+    },
+    {
+      "nodeId": "bf4",
+      "nodeInfo": "Customer Data",
+      "threats": [
+        {
+          "id": "T-BF4-001",
+          "name": "Data Breach",
+          "description": "Large-scale exposure of customer personal information",
+          "category": "data-breach",
+          "likelihood": 2,
+          "impact": 5
+        },
+        {
+          "id": "T-BF4-002",
+          "name": "Data Privacy Violation",
+          "description": "Non-compliance with GDPR/CCPA requirements",
+          "category": "compliance",
+          "likelihood": 2,
+          "impact": 4
+        },
+        {
+          "id": "T-BF4-003",
+          "name": "Data Integrity Loss",
+          "description": "Corruption or unauthorized modification of customer data",
+          "category": "integrity",
+          "likelihood": 2,
+          "impact": 4
+        }
+      ],
+      "controls": [
+        {
+          "id": "C-BF4-001",
+          "name": "Data Loss Prevention",
+          "type": "preventive",
+          "effectiveness": 85,
+          "mitigates": ["T-BF4-001"]
+        },
+        {
+          "id": "C-BF4-002",
+          "name": "Privacy Management Platform",
+          "type": "preventive",
+          "effectiveness": 90,
+          "mitigates": ["T-BF4-002"]
+        },
+        {
+          "id": "C-BF4-003",
+          "name": "Data Integrity Monitoring",
+          "type": "detective",
+          "effectiveness": 80,
+          "mitigates": ["T-BF4-003"]
+        }
+      ],
+      "vulnerabilities": [],
+      "riskScore": {
+        "inherent": 80,
+        "residual": 30,
+        "trend": "decreasing"
+      },
+      "metadata": {
+        "lastAssessed": "2024-12-11T16:00:00Z",
+        "owner": "data-governance",
+        "compliance": ["GDPR", "CCPA", "SOC2"],
+        "tags": ["privacy-critical", "high-risk"]
+      }
+    }
+  ]
+}

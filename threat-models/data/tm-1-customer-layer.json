@@ -1,0 +1,101 @@
+{
+  "layer": "customer",
+  "description": "Threat models for customer-facing entities",
+  "threatModels": [
+    {
+      "nodeId": "cust1",
+      "nodeInfo": "End Customer",
+      "threats": [
+        {
+          "id": "T-CUST-001",
+          "name": "Account Takeover",
+          "description": "Customer account compromised through credential theft or session hijacking",
+          "category": "compromise",
+          "likelihood": 3,
+          "impact": 4
+        },
+        {
+          "id": "T-CUST-002",
+          "name": "Personal Data Breach",
+          "description": "Customer PII exposed through system vulnerability",
+          "category": "data-breach",
+          "likelihood": 2,
+          "impact": 5
+        },
+        {
+          "id": "T-CUST-003",
+          "name": "Financial Loss",
+          "description": "Unauthorized transactions or payment fraud affecting customer",
+          "category": "integrity",
+          "likelihood": 3,
+          "impact": 4
+        },
+        {
+          "id": "T-CUST-004",
+          "name": "Service Unavailability",
+          "description": "Customer unable to access services or complete transactions",
+          "category": "availability",
+          "likelihood": 2,
+          "impact": 3
+        },
+        {
+          "id": "T-CUST-005",
+          "name": "Privacy Violation",
+          "description": "Customer data used without consent or shared inappropriately",
+          "category": "compliance",
+          "likelihood": 2,
+          "impact": 4
+        }
+      ],
+      "controls": [
+        {
+          "id": "C-CUST-001",
+          "name": "Multi-Factor Authentication",
+          "type": "preventive",
+          "effectiveness": 85,
+          "mitigates": ["T-CUST-001"]
+        },
+        {
+          "id": "C-CUST-002",
+          "name": "Data Encryption",
+          "type": "preventive",
+          "effectiveness": 90,
+          "mitigates": ["T-CUST-002"]
+        },
+        {
+          "id": "C-CUST-003",
+          "name": "Transaction Monitoring",
+          "type": "detective",
+          "effectiveness": 80,
+          "mitigates": ["T-CUST-003"]
+        },
+        {
+          "id": "C-CUST-004",
+          "name": "24/7 Customer Support",
+          "type": "corrective",
+          "effectiveness": 70,
+          "mitigates": ["T-CUST-001", "T-CUST-003"]
+        },
+        {
+          "id": "C-CUST-005",
+          "name": "Privacy Controls Dashboard",
+          "type": "preventive",
+          "effectiveness": 75,
+          "mitigates": ["T-CUST-005"]
+        }
+      ],
+      "vulnerabilities": [],
+      "riskScore": {
+        "inherent": 75,
+        "residual": 30,
+        "trend": "stable"
+      },
+      "metadata": {
+        "lastAssessed": "2024-12-15T10:00:00Z",
+        "owner": "customer-experience",
+        "compliance": ["GDPR", "CCPA", "PCI-DSS"],
+        "tags": ["external", "end-user", "critical"]
+      }
+    }
+  ]
+}
