@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>From Graphs to Wardley Maps - 5 Stages</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8f9fa;
+            color: #1e293b;
+        }
+
+        #main-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        #visualization-area {
+            flex: 1;
+            position: relative;
+            background: white;
+            margin: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #visualization {
+            flex: 1;
+            margin-top: 80px; /* Space for header */
+        }
+
+        #controls-panel {
+            width: 320px;
+            background: white;
+            padding: 20px;
+            overflow-y: auto;
+            border-left: 1px solid #e2e8f0;
+        }
+
+        .header {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h2 {
+            margin: 0;
+            font-size: 20px;
+            color: #1e293b;
+        }
+
+        .view-mode {
+            font-size: 14px;
+            color: #64748b;
+            margin-top: 5px;
+        }
+
+        /* Stage buttons */
+        .stage-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 0;
+            gap: 10px;
+        }
+
+        .stage-button {
+            flex: 1;
+            padding: 15px 10px;
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 600;
+            color: #64748b;
+        }
+
+        .stage-button:hover {
+            background: #f8fafc;
+            border-color: #3b82f6;
+        }
+
+        .stage-button.active {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+
+        .stage-button span {
+            display: block;
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+
+        /* Scenario buttons */
+        .scenario-button {
+            width: 100%;
+            padding: 12px 16px;
+            margin-bottom: 10px;
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        .scenario-button:hover {
+            background: #f8fafc;
+            border-color: #3b82f6;
+        }
+
+        .scenario-button.active {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+
+        /* Component list */
+        .component-list {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .component-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 0;
+            font-size: 13px;
+        }
+
+        .component-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        /* Node and link styles */
+        .node {
+            cursor: pointer;
+        }
+
+        .node-label {
+            font-size: 12px;
+            font-weight: 500;
+            fill: #1e293b;
+            text-anchor: middle;
+        }
+
+        .link {
+            fill: none;
+            stroke: #94a3b8;
+            stroke-width: 2;
+            opacity: 0.6;
+        }
+
+        .link.threat {
+            stroke: #dc2626;
+            stroke-width: 3;
+            opacity: 1;
+        }
+
+        /* Wardley specific */
+        .evolution-stage {
+            fill: #f8fafc;
+            stroke: #e2e8f0;
+            stroke-width: 1;
+        }
+
+        .evolution-label {
+            font-size: 14px;
+            fill: #64748b;
+            text-anchor: middle;
+        }
+
+        .axis-label {
+            font-size: 12px;
+            fill: #64748b;
+        }
+
+        h3 {
+            margin: 20px 0 15px 0;
+            font-size: 16px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div id="main-container">
+        <div id="visualization-area">
+            <div class="header">
+                <h2>Evolution: Traditional Graph → Wardley Map</h2>
+                <div class="view-mode" id="current-view">Stage 1: Force-Directed Graph</div>
+            </div>
+            <svg id="visualization"></svg>
+        </div>
+
+        <div id="controls-panel">
+            <h3>🎯 Select Stage</h3>
+            <div class="stage-buttons">
+                <button class="stage-button active" onclick="showStage(1)">
+                    <span>1</span>
+                    Force
+                </button>
+                <button class="stage-button" onclick="showStage(2)">
+                    <span>2</span>
+                    Top-Down
+                </button>
+                <button class="stage-button" onclick="showStage(3)">
+                    <span>3</span>
+                    Top-Down
+                </button>
+                <button class="stage-button" onclick="showStage(4)">
+                    <span>4</span>
+                    Top-Down
+                </button>
+                <button class="stage-button" onclick="showStage(5)">
+                    <span>5</span>
+                    Wardley
+                </button>
+            </div>
+
+            <h3>📍 Threat Scenarios</h3>
+            <button class="scenario-button active" onclick="setScenario('normal')">
+                Normal Operations
+            </button>
+            <button class="scenario-button" onclick="setScenario('cve')">
+                CVE-2023-12345 Impact
+            </button>
+            <button class="scenario-button" onclick="setScenario('breach')">
+                Payment System Breach
+            </button>
+
+            <h3>🔍 All Components</h3>
+            <div class="component-list" id="component-list"></div>
+        </div>
+    </div>
+
+    <script>
+        // Data
+        const nodes = [
+            // Customer - moved down from 0.95 to 0.92
+            { id: 'customer', name: 'End Customer', layer: 'customer', x: 0.5, y: 0.92, evolution: 0.9 },
+            
+            // Business Functions
+            { id: 'payment', name: 'Payment Processing', layer: 'business', x: 0.3, y: 0.85, evolution: 0.65 },
+            { id: 'auth', name: 'User Authentication', layer: 'business', x: 0.5, y: 0.88, evolution: 0.8 },
+            { id: 'orders', name: 'Order Fulfillment', layer: 'business', x: 0.7, y: 0.83, evolution: 0.55 },
+            { id: 'data', name: 'Customer Data', layer: 'business', x: 0.9, y: 0.86, evolution: 0.7 },
+            
+            // Applications  
+            { id: 'payment-api', name: 'PaymentService API', layer: 'application', x: 0.2, y: 0.65, evolution: 0.4 },
+            { id: 'auth-service', name: 'AuthService', layer: 'application', x: 0.4, y: 0.7, evolution: 0.75 },
+            { id: 'order-mgmt', name: 'OrderManagement', layer: 'application', x: 0.6, y: 0.6, evolution: 0.35 },
+            { id: 'portal', name: 'CustomerPortal', layer: 'application', x: 0.8, y: 0.68, evolution: 0.85 },
+            { id: 'notify', name: 'NotificationService', layer: 'application', x: 0.5, y: 0.55, evolution: 0.9 },
+            
+            // Components - adjusted positions to prevent overlaps
+            { id: 'gateway', name: 'Payment Gateway', layer: 'component', x: 0.15, y: 0.38, evolution: 0.15, vulnerable: true }, // moved up from 0.35
+            { id: 'validator', name: 'Transaction Validator', layer: 'component', x: 0.25, y: 0.45, evolution: 0.25 }, // moved up from 0.4
+            { id: 'fraud', name: 'Fraud Detector', layer: 'component', x: 0.35, y: 0.32, evolution: 0.2 }, // moved up slightly from 0.3
+            { id: 'token-mgr', name: 'Auth Token Manager', layer: 'component', x: 0.45, y: 0.45, evolution: 0.6 },
+            { id: 'session', name: 'Session Handler', layer: 'component', x: 0.55, y: 0.48, evolution: 0.8 },
+            { id: 'order-proc', name: 'Order Processor', layer: 'component', x: 0.65, y: 0.35, evolution: 0.3 }, // moved down from 0.38
+            { id: 'inventory', name: 'Inventory Manager', layer: 'component', x: 0.75, y: 0.25, evolution: 0.45 }
+        ];
+
+        const links = [
+            { source: 'customer', target: 'payment' },
+            { source: 'customer', target: 'auth' },
+            { source: 'customer', target: 'orders' },
+            { source: 'customer', target: 'data' },
+            { source: 'payment', target: 'payment-api' },
+            { source: 'auth', target: 'auth-service' },
+            { source: 'orders', target: 'order-mgmt' },
+            { source: 'data', target: 'portal' },
+            { source: 'payment-api', target: 'gateway' },
+            { source: 'payment-api', target: 'validator' },
+            { source: 'payment-api', target: 'fraud' },
+            { source: 'auth-service', target: 'token-mgr' },
+            { source: 'auth-service', target: 'session' },
+            { source: 'order-mgmt', target: 'order-proc' },
+            { source: 'order-mgmt', target: 'inventory' },
+            { source: 'notify', target: 'session' }
+        ];
+
+        const layerColors = {
+            customer: '#6366f1',
+            business: '#1e3a8a',
+            application: '#6b21a8',
+            component: '#be185d'
+        };
+
+        // Global variables
+        let svg, width, height;
+        let currentStage = 1;
+        let currentScenario = 'normal';
+        let simulation = null;
+
+        // Initialize
+        function init() {
+            const container = document.getElementById('visualization-area');
+            width = container.offsetWidth;
+            height = container.offsetHeight - 100;
+
+            svg = d3.select('#visualization')
+                .attr('width', width)
+                .attr('height', height);
+
+            // Add a background rect to ensure SVG is visible
+            svg.append('rect')
+                .attr('width', width)
+                .attr('height', height)
+                .attr('fill', 'transparent');
+
+            populateComponentList();
+            
+            // Add a small delay to ensure DOM is ready
+            setTimeout(() => {
+                showStage(1);
+            }, 100);
+        }
+
+        // Show specific stage
+        function showStage(stage) {
+            currentStage = stage;
+            
+            // Update buttons
+            document.querySelectorAll('.stage-button').forEach((btn, i) => {
+                btn.classList.toggle('active', i + 1 === stage);
+            });
+
+            // Clear SVG
+            svg.selectAll('*').remove();
+
+            // Stop any running simulation
+            if (simulation) {
+                simulation.stop();
+                simulation = null;
+            }
+
+            // Draw the appropriate stage
+            switch(stage) {
+                case 1:
+                    drawForceGraph();
+                    updateHeader('Stage 1: Force-Directed Graph (Position is arbitrary)');
+                    break;
+                case 2:
+                    drawHierarchy('top-down');
+                    updateHeader('Stage 2: Top-Down Hierarchy (Same data, different layout)');
+                    break;
+                case 3:
+                    drawHierarchy('top-down-shuffled');
+                    updateHeader('Stage 3: Top-Down Hierarchy (Same structure, positions shuffled!)');
+                    break;
+                case 4:
+                    drawHierarchy('top-down-colored');
+                    updateHeader('Stage 4: Top-Down Hierarchy (Color shows business alignment)');
+                    break;
+                case 5:
+                    drawWardleyMap();
+                    updateHeader('Stage 5: Wardley Map (Position = Strategic Meaning!)');
+                    break;
+            }
+        }
+
+        // Stage 1: Force-directed graph
+        function drawForceGraph() {
+            console.log('Drawing force graph...');
+            
+            // Create a copy of nodes for force simulation
+            const simNodes = nodes.map(d => ({...d}));
+            const simLinks = links.map(d => ({...d}));
+
+            // Initialize random positions
+            simNodes.forEach(node => {
+                node.x = Math.random() * width;
+                node.y = Math.random() * height;
+            });
+
+            // Create force simulation
+            simulation = d3.forceSimulation(simNodes)
+                .force('link', d3.forceLink(simLinks).id(d => d.id).distance(100))
+                .force('charge', d3.forceManyBody().strength(-300))
+                .force('center', d3.forceCenter(width / 2, height / 2))
+                .force('collision', d3.forceCollide().radius(40))
+                .alphaTarget(0.3);
+
+            // Create links
+            const link = svg.append('g')
+                .attr('class', 'links')
+                .selectAll('line')
+                .data(simLinks)
+                .join('line')
+                .attr('class', d => isAffectedLink(d) ? 'link threat' : 'link')
+                .attr('x1', width / 2)
+                .attr('y1', height / 2)
+                .attr('x2', width / 2)
+                .attr('y2', height / 2);
+
+            // Create nodes
+            const node = svg.append('g')
+                .attr('class', 'nodes')
+                .selectAll('g')
+                .data(simNodes)
+                .join('g')
+                .attr('transform', `translate(${width/2},${height/2})`)
+                .call(d3.drag()
+                    .on('start', dragstarted)
+                    .on('drag', dragged)
+                    .on('end', dragended));
+
+            node.append('circle')
+                .attr('r', d => d.layer === 'customer' ? 30 : 20)
+                .attr('fill', d => isAffectedNode(d.id) ? '#dc2626' : layerColors[d.layer])
+                .attr('stroke', '#fff')
+                .attr('stroke-width', 2)
+                .attr('class', 'node');
+
+            node.append('text')
+                .attr('class', 'node-label')
+                .attr('dy', 35)
+                .text(d => d.name);
+
+            // Update positions on tick
+            simulation.on('tick', () => {
+                link
+                    .attr('x1', d => d.source.x)
+                    .attr('y1', d => d.source.y)
+                    .attr('x2', d => d.target.x)
+                    .attr('y2', d => d.target.y);
+
+                node.attr('transform', d => `translate(${d.x},${d.y})`);
+            });
+
+            // Start the simulation
+            simulation.restart();
+
+            // Drag functions
+            function dragstarted(event, d) {
+                if (!event.active) simulation.alphaTarget(0.3).restart();
+                d.fx = d.x;
+                d.fy = d.y;
+            }
+
+            function dragged(event, d) {
+                d.fx = event.x;
+                d.fy = event.y;
+            }
+
+            function dragended(event, d) {
+                if (!event.active) simulation.alphaTarget(0);
+                d.fx = null;
+                d.fy = null;
+            }
+        }
+
+        // Stages 2-4: Hierarchy layouts
+        function drawHierarchy(orientation) {
+            const g = svg.append('g');
+
+            // Calculate positions based on orientation
+            nodes.forEach(node => {
+                const layerNodes = nodes.filter(n => n.layer === node.layer);
+                let index = layerNodes.indexOf(node);
+                const count = layerNodes.length;
+
+                switch(orientation) {
+                    case 'top-down':
+                        const layers = { customer: 0, business: 1, application: 2, component: 3 };
+                        const layerY = 100 + layers[node.layer] * 150;
+                        
+                        if (node.layer === 'customer') {
+                            node.displayX = width / 2;
+                            node.displayY = layerY;
+                        } else {
+                            const spreadWidth = width * 0.8;
+                            const startX = (width - spreadWidth) / 2;
+                            node.displayX = startX + (spreadWidth / Math.max(1, count - 1)) * index;
+                            node.displayY = layerY;
+                        }
+                        break;
+
+                    case 'top-down-shuffled':
+                        // Same layout as top-down but with shuffled positions
+                        const layersShuffled = { customer: 0, business: 1, application: 2, component: 3 };
+                        const layerYShuffled = 100 + layersShuffled[node.layer] * 150;
+                        
+                        if (node.layer === 'customer') {
+                            node.displayX = width / 2;
+                            node.displayY = layerYShuffled;
+                        } else {
+                            // Shuffle positions within each layer
+                            const shuffleMap = {
+                                // Business layer: move positions around
+                                'payment': 3,      // was 0, now rightmost
+                                'auth': 1,         // was 1, stays middle-left
+                                'orders': 0,       // was 2, now leftmost
+                                'data': 2,         // was 3, now middle-right
+                                
+                                // Application layer shuffling
+                                'payment-api': 4,  // move to right
+                                'auth-service': 2, // stay middle
+                                'order-mgmt': 1,   // move left
+                                'portal': 0,       // move to far left
+                                'notify': 3,       // move right
+                                
+                                // Component layer shuffling
+                                'gateway': 5,      // move to far right
+                                'validator': 3,    
+                                'fraud': 1,        
+                                'token-mgr': 0,    // move to far left
+                                'session': 4,      
+                                'order-proc': 2,   
+                                'inventory': 6     
+                            };
+                            
+                            // Use shuffled index if available, otherwise use original
+                            const shuffledIndex = shuffleMap[node.id] !== undefined ? shuffleMap[node.id] : index;
+                            
+                            const spreadWidth = width * 0.8;
+                            const startX = (width - spreadWidth) / 2;
+                            node.displayX = startX + (spreadWidth / Math.max(1, count - 1)) * shuffledIndex;
+                            node.displayY = layerYShuffled;
+                        }
+                        break;
+
+                    case 'left-right':
+                        const layersLR = { customer: 0, business: 1, application: 2, component: 3 };
+                        const layerX = 100 + layersLR[node.layer] * 200;
+                        
+                        if (node.layer === 'customer') {
+                            node.displayX = layerX;
+                            node.displayY = height / 2;
+                        } else {
+                            const spreadHeight = height * 0.8;
+                            const startY = (height - spreadHeight) / 2;
+                            node.displayX = layerX;
+                            node.displayY = startY + (spreadHeight / Math.max(1, count - 1)) * index;
+                        }
+                        break;
+
+                    case 'top-down-colored':
+                        // Same as original top-down but with color coding by business function
+                        const layersColored = { customer: 0, business: 1, application: 2, component: 3 };
+                        const layerYColored = 100 + layersColored[node.layer] * 150;
+                        
+                        if (node.layer === 'customer') {
+                            node.displayX = width / 2;
+                            node.displayY = layerYColored;
+                        } else {
+                            const spreadWidth = width * 0.8;
+                            const startX = (width - spreadWidth) / 2;
+                            node.displayX = startX + (spreadWidth / Math.max(1, count - 1)) * index;
+                            node.displayY = layerYColored;
+                        }
+                        break;
+
+                    case 'radial':
+                        if (node.layer === 'customer') {
+                            node.displayX = width / 2;
+                            node.displayY = height / 2;
+                        } else {
+                            const layersR = { business: 1, application: 2, component: 3 };
+                            const radius = 100 + (layersR[node.layer] || 0) * 100;
+                            const angle = (2 * Math.PI / count) * index - Math.PI / 2;
+                            node.displayX = width / 2 + radius * Math.cos(angle);
+                            node.displayY = height / 2 + radius * Math.sin(angle);
+                        }
+                        break;
+                }
+            });
+
+            // Draw links
+            g.append('g')
+                .selectAll('line')
+                .data(links)
+                .join('line')
+                .attr('class', d => isAffectedLink(d) ? 'link threat' : 'link')
+                .attr('x1', d => nodes.find(n => n.id === d.source).displayX)
+                .attr('y1', d => nodes.find(n => n.id === d.source).displayY)
+                .attr('x2', d => nodes.find(n => n.id === d.target).displayX)
+                .attr('y2', d => nodes.find(n => n.id === d.target).displayY);
+
+            // Draw nodes
+            const nodeGroups = g.append('g')
+                .selectAll('g')
+                .data(nodes)
+                .join('g')
+                .attr('transform', d => `translate(${d.displayX},${d.displayY})`);
+
+            nodeGroups.append('circle')
+                .attr('r', d => d.layer === 'customer' ? 30 : 20)
+                .attr('fill', d => isAffectedNode(d.id) ? '#dc2626' : layerColors[d.layer])
+                .attr('stroke', '#fff')
+                .attr('stroke-width', 2)
+                .attr('class', 'node');
+
+            nodeGroups.append('text')
+                .attr('class', 'node-label')
+                .attr('dy', 35)
+                .text(d => d.name);
+        }
+
+        // Stage 5: Wardley Map
+        function drawWardleyMap() {
+            const g = svg.append('g');
+
+            // Draw evolution stages background
+            const stages = [
+                { name: 'Genesis', start: 0, end: 0.25 },
+                { name: 'Custom Built', start: 0.25, end: 0.5 },
+                { name: 'Product', start: 0.5, end: 0.75 },
+                { name: 'Commodity', start: 0.75, end: 1 }
+            ];
+
+            stages.forEach(stage => {
+                g.append('rect')
+                    .attr('class', 'evolution-stage')
+                    .attr('x', stage.start * width)
+                    .attr('y', 0)
+                    .attr('width', (stage.end - stage.start) * width)
+                    .attr('height', height);
+
+                g.append('text')
+                    .attr('class', 'evolution-label')
+                    .attr('x', (stage.start + stage.end) / 2 * width)
+                    .attr('y', height - 10)
+                    .text(stage.name);
+            });
+
+            // Draw value chain axis
+            g.append('line')
+                .attr('x1', 0)
+                .attr('y1', 0)
+                .attr('x2', 0)
+                .attr('y2', height)
+                .attr('stroke', '#e2e8f0')
+                .attr('stroke-width', 2);
+
+            g.append('text')
+                .attr('class', 'axis-label')
+                .attr('transform', 'rotate(-90)')
+                .attr('y', -5)
+                .attr('x', -height / 2)
+                .attr('text-anchor', 'middle')
+                .text('Value Chain (Visible → Invisible)');
+
+            // Position nodes based on evolution and value chain
+            nodes.forEach(node => {
+                node.wardleyX = node.evolution * width;
+                node.wardleyY = (1 - node.y) * height;
+            });
+
+            // Draw links
+            g.append('g')
+                .selectAll('line')
+                .data(links)
+                .join('line')
+                .attr('class', d => isAffectedLink(d) ? 'link threat' : 'link')
+                .attr('x1', d => nodes.find(n => n.id === d.source).wardleyX)
+                .attr('y1', d => nodes.find(n => n.id === d.source).wardleyY)
+                .attr('x2', d => nodes.find(n => n.id === d.target).wardleyX)
+                .attr('y2', d => nodes.find(n => n.id === d.target).wardleyY);
+
+            // Draw nodes
+            const nodeGroups = g.append('g')
+                .selectAll('g')
+                .data(nodes)
+                .join('g')
+                .attr('transform', d => `translate(${d.wardleyX},${d.wardleyY})`);
+
+            nodeGroups.append('circle')
+                .attr('r', d => d.layer === 'customer' ? 30 : 20)
+                .attr('fill', d => isAffectedNode(d.id) ? '#dc2626' : layerColors[d.layer])
+                .attr('stroke', '#fff')
+                .attr('stroke-width', 2)
+                .attr('class', 'node');
+
+            nodeGroups.append('text')
+                .attr('class', 'node-label')
+                .attr('dy', -25)
+                .text(d => d.name);
+        }
+
+        // Set scenario
+        function setScenario(scenario) {
+            currentScenario = scenario;
+            
+            document.querySelectorAll('.scenario-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            showStage(currentStage);
+        }
+
+        // Check if node is affected
+        function isAffectedNode(nodeId) {
+            if (currentScenario === 'normal') return false;
+            
+            const affected = {
+                'cve': ['gateway', 'payment-api', 'payment', 'customer'],
+                'breach': ['gateway', 'validator', 'payment-api', 'payment', 'customer']
+            };
+            
+            return affected[currentScenario]?.includes(nodeId) || false;
+        }
+
+        // Check if link is affected
+        function isAffectedLink(link) {
+            if (currentScenario === 'normal') return false;
+            
+            const sourceId = typeof link.source === 'string' ? link.source : link.source.id;
+            const targetId = typeof link.target === 'string' ? link.target : link.target.id;
+            
+            return isAffectedNode(sourceId) && isAffectedNode(targetId);
+        }
+
+        // Update header
+        function updateHeader(text) {
+            document.getElementById('current-view').textContent = text;
+        }
+
+        // Populate component list
+        function populateComponentList() {
+            const list = document.getElementById('component-list');
+            
+            nodes.forEach(node => {
+                const item = document.createElement('div');
+                item.className = 'component-item';
+                item.innerHTML = `
+                    <div class="component-dot" style="background: ${layerColors[node.layer]}"></div>
+                    <span>${node.name}</span>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        // Initialize on load
+        window.addEventListener('load', init);
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            const container = document.getElementById('visualization-area');
+            width = container.offsetWidth;
+            height = container.offsetHeight - 100;
+            
+            svg.attr('width', width).attr('height', height);
+            
+            // Redraw current stage
+            showStage(currentStage);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>5 Different Wardley Map Strategies</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8f9fa;
+            color: #1e293b;
+        }
+
+        #main-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        #visualization-area {
+            flex: 1;
+            position: relative;
+            background: white;
+            margin: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #visualization {
+            flex: 1;
+            margin-top: 80px;
+        }
+
+        #controls-panel {
+            width: 320px;
+            background: white;
+            padding: 20px;
+            overflow-y: auto;
+            border-left: 1px solid #e2e8f0;
+        }
+
+        .header {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h2 {
+            margin: 0;
+            font-size: 20px;
+            color: #1e293b;
+        }
+
+        .view-mode {
+            font-size: 14px;
+            color: #64748b;
+            margin-top: 5px;
+        }
+
+        /* Stage buttons */
+        .stage-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 0;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .stage-button {
+            flex: 1;
+            min-width: 100px;
+            padding: 15px 10px;
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 600;
+            color: #64748b;
+        }
+
+        .stage-button:hover {
+            background: #f8fafc;
+            border-color: #3b82f6;
+        }
+
+        .stage-button.active {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+
+        .stage-button span {
+            display: block;
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        /* Strategy info */
+        .strategy-info {
+            background: #f0f9ff;
+            border: 2px solid #3b82f6;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+
+        .strategy-info h4 {
+            margin: 0 0 10px 0;
+            color: #1e40af;
+        }
+
+        .strategy-info p {
+            margin: 5px 0;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        /* Key insights */
+        .insights-list {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .insight-item {
+            padding: 8px 0;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .insight-item::before {
+            content: "→ ";
+            color: #3b82f6;
+            font-weight: bold;
+        }
+
+        /* Node and link styles */
+        .node {
+            cursor: pointer;
+        }
+
+        .node-label {
+            font-size: 11px;
+            font-weight: 500;
+            fill: #1e293b;
+            text-anchor: middle;
+        }
+
+        .link {
+            fill: none;
+            stroke: #94a3b8;
+            stroke-width: 2;
+            opacity: 0.6;
+        }
+
+        /* Evolution stages */
+        .evolution-stage {
+            fill: #f8fafc;
+            stroke: #e2e8f0;
+            stroke-width: 1;
+        }
+
+        .evolution-label {
+            font-size: 14px;
+            fill: #64748b;
+            text-anchor: middle;
+        }
+
+        .axis-label {
+            font-size: 12px;
+            fill: #64748b;
+        }
+
+        /* Highlight strategic focus */
+        .strategic-focus {
+            stroke: #f59e0b;
+            stroke-width: 3;
+            fill: none;
+            stroke-dasharray: 5,5;
+            opacity: 0.6;
+        }
+
+        h3 {
+            margin: 20px 0 15px 0;
+            font-size: 16px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div id="main-container">
+        <div id="visualization-area">
+            <div class="header">
+                <h2>5 Strategic Positions: Same Components, Different Worlds</h2>
+                <div class="view-mode" id="current-view">Legacy Bank: Everything Custom (High Cost)</div>
+            </div>
+            <svg id="visualization"></svg>
+        </div>
+
+        <div id="controls-panel">
+            <h3>🎯 Select Strategy</h3>
+            <div class="stage-buttons">
+                <button class="stage-button active" onclick="showStage(1)">
+                    <span>🏦</span>
+                    Legacy Bank
+                </button>
+                <button class="stage-button" onclick="showStage(2)">
+                    <span>🚀</span>
+                    Tech Startup
+                </button>
+                <button class="stage-button" onclick="showStage(3)">
+                    <span>🛒</span>
+                    E-commerce
+                </button>
+                <button class="stage-button" onclick="showStage(4)">
+                    <span>🔒</span>
+                    Security Co
+                </button>
+                <button class="stage-button" onclick="showStage(5)">
+                    <span>☁️</span>
+                    Cloud Native
+                </button>
+            </div>
+
+            <div class="strategy-info" id="strategy-info">
+                <h4>Legacy Bank Strategy</h4>
+                <p><strong>Focus:</strong> Control & Compliance</p>
+                <p><strong>Challenge:</strong> High maintenance costs</p>
+                <p><strong>Opportunity:</strong> Modernization potential</p>
+            </div>
+
+            <h3>💡 Key Insights</h3>
+            <div class="insights-list" id="insights-list">
+                <div class="insight-item">Everything built in-house for control</div>
+                <div class="insight-item">High operational costs</div>
+                <div class="insight-item">Struggling with innovation speed</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Layer colors
+        const layerColors = {
+            customer: '#6366f1',
+            business: '#1e3a8a',
+            application: '#6b21a8',
+            component: '#be185d'
+        };
+
+        // Different strategic positions
+        const strategies = {
+            'legacy-bank': {
+                name: "Legacy Bank",
+                icon: "🏦",
+                positions: {
+                    'customer': 0.9,
+                    'payment': 0.35,     // Custom built payment systems
+                    'auth': 0.3,         // Moving to custom from genesis
+                    'orders': 0.28,      // Legacy but well-understood
+                    'data': 0.4,         // Custom data warehouse
+                    'payment-api': 0.3,  // Custom built APIs
+                    'auth-service': 0.32, // Mature custom auth service
+                    'order-mgmt': 0.26,  // Custom order management
+                    'portal': 0.55,      // Modernized to product
+                    'notify': 0.6,       // Using some products
+                    'gateway': 0.18,     // Legacy integration, poorly understood
+                    'validator': 0.28,   // Well-established validation
+                    'fraud': 0.22,       // Proprietary but mature fraud system
+                    'token-mgr': 0.35,   // Custom token management
+                    'session': 0.65,     // Moved to Redis product
+                    'order-proc': 0.15,  // Ancient order processing logic
+                    'inventory': 0.3     // Custom inventory system
+                },
+                focus: ['payment', 'auth', 'fraud'],
+                info: {
+                    focus: "Control & Compliance",
+                    challenge: "High maintenance costs",
+                    opportunity: "Modernization potential"
+                },
+                insights: [
+                    "Mature bank with well-established custom systems",
+                    "Most legacy code has been documented and understood",
+                    "Starting product adoption for non-core functions",
+                    "Compliance still drives custom development"
+                ]
+            },
+            'tech-startup': {
+                name: "Tech Startup",
+                icon: "🚀",
+                positions: {
+                    'customer': 0.9,
+                    'payment': 0.85,     // Using Stripe
+                    'auth': 0.9,         // Auth0/Okta
+                    'orders': 0.3,       // Some customization
+                    'data': 0.6,         // Mix of solutions
+                    'payment-api': 0.8,
+                    'auth-service': 0.95,
+                    'order-mgmt': 0.25,
+                    'portal': 0.7,       // React/Next.js
+                    'notify': 0.95,      // Twilio/SendGrid
+                    'gateway': 0.9,      // Stripe APIs
+                    'validator': 0.85,
+                    'fraud': 0.2,        // Custom ML models (differentiator)
+                    'token-mgr': 0.9,
+                    'session': 0.85,     // Redis
+                    'order-proc': 0.3,
+                    'inventory': 0.4
+                },
+                focus: ['fraud', 'order-mgmt', 'order-proc'],
+                info: {
+                    focus: "Speed to market",
+                    challenge: "Differentiation",
+                    opportunity: "AI/ML innovation"
+                },
+                insights: [
+                    "Buy everything except core differentiators",
+                    "Focus engineering on fraud detection",
+                    "Rapid deployment using commodities",
+                    "Innovation in data and ML"
+                ]
+            },
+            'ecommerce': {
+                name: "E-commerce Giant",
+                icon: "🛒",
+                positions: {
+                    'customer': 0.9,
+                    'payment': 0.7,      // Mix of providers
+                    'auth': 0.8,         // Standard SSO
+                    'orders': 0.2,       // Core competency
+                    'data': 0.4,         // Customer insights
+                    'payment-api': 0.6,
+                    'auth-service': 0.8,
+                    'order-mgmt': 0.15,  // Secret sauce
+                    'portal': 0.6,
+                    'notify': 0.9,
+                    'gateway': 0.7,
+                    'validator': 0.6,
+                    'fraud': 0.5,        // Good enough
+                    'token-mgr': 0.8,
+                    'session': 0.8,
+                    'order-proc': 0.1,   // Core IP
+                    'inventory': 0.2     // Competitive advantage
+                },
+                focus: ['orders', 'order-mgmt', 'order-proc', 'inventory'],
+                info: {
+                    focus: "Order fulfillment excellence",
+                    challenge: "Scale and efficiency",
+                    opportunity: "Supply chain innovation"
+                },
+                insights: [
+                    "Order management is the key differentiator",
+                    "Inventory optimization drives profits",
+                    "Payment is important but not differentiating",
+                    "Focus on logistics and fulfillment"
+                ]
+            },
+            'security-first': {
+                name: "Security Company",
+                icon: "🔒",
+                positions: {
+                    'customer': 0.9,
+                    'payment': 0.4,      // Careful selection
+                    'auth': 0.3,         // Custom hardened auth
+                    'orders': 0.5,
+                    'data': 0.2,         // Zero-trust architecture
+                    'payment-api': 0.3,
+                    'auth-service': 0.2, // Proprietary MFA
+                    'order-mgmt': 0.4,
+                    'portal': 0.3,       // Hardened frontend
+                    'notify': 0.6,       // Encrypted channels
+                    'gateway': 0.2,      // Custom security layers
+                    'validator': 0.15,   // Advanced validation
+                    'fraud': 0.1,        // State-of-art detection
+                    'token-mgr': 0.2,    // Hardware security modules
+                    'session': 0.25,     // Custom session management
+                    'order-proc': 0.4,
+                    'inventory': 0.5
+                },
+                focus: ['auth', 'auth-service', 'fraud', 'token-mgr', 'validator'],
+                info: {
+                    focus: "Maximum security",
+                    challenge: "Usability vs security",
+                    opportunity: "Security-as-a-Service"
+                },
+                insights: [
+                    "Security components are core IP",
+                    "Every layer has security enhancements",
+                    "Trade convenience for protection",
+                    "Potential to productize security stack"
+                ]
+            },
+            'cloud-native': {
+                name: "Cloud Native SaaS",
+                icon: "☁️",
+                positions: {
+                    'customer': 0.9,
+                    'payment': 0.9,      // Stripe/Square
+                    'auth': 0.95,        // Cognito/Auth0
+                    'orders': 0.7,       // Standard workflows
+                    'data': 0.8,         // BigQuery/Snowflake
+                    'payment-api': 0.85,
+                    'auth-service': 0.95,
+                    'order-mgmt': 0.7,
+                    'portal': 0.85,      // Vercel/Netlify
+                    'notify': 0.98,      // SNS/SendGrid
+                    'gateway': 0.95,
+                    'validator': 0.9,
+                    'fraud': 0.35,       // Custom ML models for fraud
+                    'token-mgr': 0.95,
+                    'session': 0.9,      // Managed Redis
+                    'order-proc': 0.3,   // Custom processing algorithms
+                    'inventory': 0.4     // Custom optimization logic
+                },
+                focus: ['fraud', 'order-proc', 'inventory'],
+                info: {
+                    focus: "Operational efficiency",
+                    challenge: "Avoiding vendor lock-in",
+                    opportunity: "Global scale at low cost"
+                },
+                insights: [
+                    "Everything commodity except our secret sauce",
+                    "Custom ML fraud detection is our differentiator", 
+                    "Order processing algorithms give us an edge",
+                    "Inventory optimization is proprietary IP"
+                ]
+            }
+        };
+
+        // Global variables
+        let svg, width, height;
+        let currentStrategy = 'legacy-bank';
+
+        // Initialize
+        function init() {
+            const container = document.getElementById('visualization-area');
+            width = container.offsetWidth;
+            height = container.offsetHeight - 100;
+
+            svg = d3.select('#visualization')
+                .attr('width', width)
+                .attr('height', height);
+
+            showStage(1);
+        }
+
+        // Show specific strategy
+        function showStage(stage) {
+            const strategyKeys = Object.keys(strategies);
+            currentStrategy = strategyKeys[stage - 1];
+            
+            // Update buttons
+            document.querySelectorAll('.stage-button').forEach((btn, i) => {
+                btn.classList.toggle('active', i + 1 === stage);
+            });
+
+            // Update strategy info
+            const strategy = strategies[currentStrategy];
+            document.getElementById('strategy-info').innerHTML = `
+                <h4>${strategy.name} Strategy</h4>
+                <p><strong>Focus:</strong> ${strategy.info.focus}</p>
+                <p><strong>Challenge:</strong> ${strategy.info.challenge}</p>
+                <p><strong>Opportunity:</strong> ${strategy.info.opportunity}</p>
+            `;
+
+            // Update insights
+            document.getElementById('insights-list').innerHTML = strategy.insights
+                .map(insight => `<div class="insight-item">${insight}</div>`)
+                .join('');
+
+            // Update header
+            updateHeader(`${strategy.name}: ${strategy.info.focus}`);
+
+            // Draw the map
+            drawWardleyMap(currentStrategy);
+        }
+
+        // Base node data
+        const baseNodes = [
+            { id: 'customer', name: 'End Customer', layer: 'customer', x: 0.5, y: 0.92 },
+            { id: 'payment', name: 'Payment Processing', layer: 'business', x: 0.3, y: 0.85 },
+            { id: 'auth', name: 'User Authentication', layer: 'business', x: 0.5, y: 0.88 },
+            { id: 'orders', name: 'Order Fulfillment', layer: 'business', x: 0.7, y: 0.83 },
+            { id: 'data', name: 'Customer Data', layer: 'business', x: 0.9, y: 0.86 },
+            { id: 'payment-api', name: 'PaymentService API', layer: 'application', x: 0.2, y: 0.65 },
+            { id: 'auth-service', name: 'AuthService', layer: 'application', x: 0.4, y: 0.7 },
+            { id: 'order-mgmt', name: 'OrderManagement', layer: 'application', x: 0.6, y: 0.6 },
+            { id: 'portal', name: 'CustomerPortal', layer: 'application', x: 0.8, y: 0.68 },
+            { id: 'notify', name: 'NotificationService', layer: 'application', x: 0.5, y: 0.55 },
+            { id: 'gateway', name: 'Payment Gateway', layer: 'component', x: 0.15, y: 0.38 },
+            { id: 'validator', name: 'Transaction Validator', layer: 'component', x: 0.25, y: 0.45 },
+            { id: 'fraud', name: 'Fraud Detector', layer: 'component', x: 0.35, y: 0.32 },
+            { id: 'token-mgr', name: 'Auth Token Manager', layer: 'component', x: 0.45, y: 0.45 },
+            { id: 'session', name: 'Session Handler', layer: 'component', x: 0.55, y: 0.48 },
+            { id: 'order-proc', name: 'Order Processor', layer: 'component', x: 0.65, y: 0.35 },
+            { id: 'inventory', name: 'Inventory Manager', layer: 'component', x: 0.75, y: 0.25 }
+        ];
+
+        const links = [
+            { source: 'customer', target: 'payment' },
+            { source: 'customer', target: 'auth' },
+            { source: 'customer', target: 'orders' },
+            { source: 'customer', target: 'data' },
+            { source: 'payment', target: 'payment-api' },
+            { source: 'auth', target: 'auth-service' },
+            { source: 'orders', target: 'order-mgmt' },
+            { source: 'data', target: 'portal' },
+            { source: 'payment-api', target: 'gateway' },
+            { source: 'payment-api', target: 'validator' },
+            { source: 'payment-api', target: 'fraud' },
+            { source: 'auth-service', target: 'token-mgr' },
+            { source: 'auth-service', target: 'session' },
+            { source: 'order-mgmt', target: 'order-proc' },
+            { source: 'order-mgmt', target: 'inventory' },
+            { source: 'notify', target: 'session' }
+        ];
+
+        // Draw Wardley Map for specific strategy
+        function drawWardleyMap(strategyKey) {
+            // Clear SVG
+            svg.selectAll('*').remove();
+
+            const strategy = strategies[strategyKey];
+            
+            // Create nodes for this strategy
+            const nodes = baseNodes.map(node => ({
+                ...node,
+                evolution: strategy.positions[node.id],
+                isStrategicFocus: strategy.focus.includes(node.id)
+            }));
+
+            const g = svg.append('g');
+
+            // Draw evolution stages background
+            const stages = [
+                { name: 'Genesis', start: 0, end: 0.25 },
+                { name: 'Custom Built', start: 0.25, end: 0.5 },
+                { name: 'Product', start: 0.5, end: 0.75 },
+                { name: 'Commodity', start: 0.75, end: 1 }
+            ];
+
+            stages.forEach(stage => {
+                g.append('rect')
+                    .attr('class', 'evolution-stage')
+                    .attr('x', stage.start * width)
+                    .attr('y', 0)
+                    .attr('width', (stage.end - stage.start) * width)
+                    .attr('height', height);
+
+                g.append('text')
+                    .attr('class', 'evolution-label')
+                    .attr('x', (stage.start + stage.end) / 2 * width)
+                    .attr('y', height - 10)
+                    .text(stage.name);
+            });
+
+            // Draw value chain axis
+            g.append('line')
+                .attr('x1', 0)
+                .attr('y1', 0)
+                .attr('x2', 0)
+                .attr('y2', height)
+                .attr('stroke', '#e2e8f0')
+                .attr('stroke-width', 2);
+
+            g.append('text')
+                .attr('class', 'axis-label')
+                .attr('transform', 'rotate(-90)')
+                .attr('y', -5)
+                .attr('x', -height / 2)
+                .attr('text-anchor', 'middle')
+                .text('Value Chain (Visible → Invisible)');
+
+            // Position nodes based on evolution and value chain
+            nodes.forEach(node => {
+                node.wardleyX = node.evolution * width;
+                node.wardleyY = (1 - node.y) * height;
+            });
+
+            // Draw strategic focus highlights
+            const focusNodes = nodes.filter(n => n.isStrategicFocus);
+            if (focusNodes.length > 0) {
+                // Calculate bounding box for strategic focus
+                const padding = 40;
+                const minX = Math.min(...focusNodes.map(n => n.wardleyX)) - padding;
+                const maxX = Math.max(...focusNodes.map(n => n.wardleyX)) + padding;
+                const minY = Math.min(...focusNodes.map(n => n.wardleyY)) - padding;
+                const maxY = Math.max(...focusNodes.map(n => n.wardleyY)) + padding;
+
+                g.append('rect')
+                    .attr('class', 'strategic-focus')
+                    .attr('x', minX)
+                    .attr('y', minY)
+                    .attr('width', maxX - minX)
+                    .attr('height', maxY - minY)
+                    .attr('rx', 20);
+            }
+
+            // Draw links
+            g.append('g')
+                .selectAll('line')
+                .data(links)
+                .join('line')
+                .attr('class', 'link')
+                .attr('x1', d => nodes.find(n => n.id === d.source).wardleyX)
+                .attr('y1', d => nodes.find(n => n.id === d.source).wardleyY)
+                .attr('x2', d => nodes.find(n => n.id === d.target).wardleyX)
+                .attr('y2', d => nodes.find(n => n.id === d.target).wardleyY);
+
+            // Draw nodes
+            const nodeGroups = g.append('g')
+                .selectAll('g')
+                .data(nodes)
+                .join('g')
+                .attr('transform', d => `translate(${d.wardleyX},${d.wardleyY})`);
+
+            nodeGroups.append('circle')
+                .attr('r', d => d.layer === 'customer' ? 30 : 20)
+                .attr('fill', d => d.isStrategicFocus ? '#f59e0b' : layerColors[d.layer])
+                .attr('stroke', '#fff')
+                .attr('stroke-width', 2)
+                .attr('class', 'node');
+
+            nodeGroups.append('text')
+                .attr('class', 'node-label')
+                .attr('dy', -25)
+                .text(d => d.name);
+        }
+
+        // Update header
+        function updateHeader(text) {
+            document.getElementById('current-view').textContent = text;
+        }
+
+        // Initialize on load
+        window.addEventListener('load', init);
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            const container = document.getElementById('visualization-area');
+            width = container.offsetWidth;
+            height = container.offsetHeight - 100;
+            
+            svg.attr('width', width).attr('height', height);
+            
+            // Redraw current stage
+            drawWardleyMap(currentStrategy);
+        });
+    </script>
+</body>
+</html>

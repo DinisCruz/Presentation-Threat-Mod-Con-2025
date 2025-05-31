@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security Risk Prioritization with Wardley Maps</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8f9fa;
+            color: #1e293b;
+        }
+
+        #main-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        #visualization-area {
+            flex: 1;
+            position: relative;
+            background: white;
+            margin: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #visualization {
+            flex: 1;
+            margin-top: 80px;
+        }
+
+        #controls-panel {
+            width: 380px;
+            background: white;
+            padding: 20px;
+            overflow-y: auto;
+            border-left: 1px solid #e2e8f0;
+        }
+
+        .header {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h2 {
+            margin: 0;
+            font-size: 20px;
+            color: #1e293b;
+        }
+
+        .view-mode {
+            font-size: 14px;
+            color: #64748b;
+            margin-top: 5px;
+        }
+
+        // Stage buttons
+        .stage-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 0;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .stage-button {
+            flex: 1;
+            min-width: 120px;
+            padding: 15px 10px;
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 600;
+            color: #64748b;
+        }
+
+        .stage-button:hover {
+            background: #f8fafc;
+            border-color: #3b82f6;
+        }
+
+        .stage-button.active {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+
+        .stage-button span {
+            display: block;
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+
+        /* Vulnerability info */
+        .vuln-info {
+            background: #fef2f2;
+            border: 2px solid #dc2626;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+
+        .vuln-info h4 {
+            margin: 0 0 10px 0;
+            color: #991b1b;
+        }
+
+        .vuln-info p {
+            margin: 5px 0;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        /* Vulnerable components list */
+        .vuln-list {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .vuln-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 0;
+            font-size: 13px;
+        }
+
+        .vuln-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 10px;
+            background: #dc2626;
+        }
+
+        /* Node and link styles */
+        .node {
+            cursor: pointer;
+        }
+
+        .node-label {
+            font-size: 11px;
+            font-weight: 500;
+            fill: #1e293b;
+            text-anchor: middle;
+        }
+
+        .link {
+            fill: none;
+            stroke: #94a3b8;
+            stroke-width: 2;
+            opacity: 0.6;
+        }
+
+        /* Evolution stages for security */
+        .evolution-stage {
+            fill: #f8fafc;
+            stroke: #e2e8f0;
+            stroke-width: 1;
+        }
+
+        .evolution-label {
+            font-size: 14px;
+            fill: #64748b;
+            text-anchor: middle;
+        }
+
+        .evolution-details {
+            font-size: 10px;
+            fill: #94a3b8;
+            text-anchor: middle;
+        }
+
+        .axis-label {
+            font-size: 12px;
+            fill: #64748b;
+        }
+
+        /* Risk indicator */
+        .risk-indicator {
+            stroke: #dc2626;
+            stroke-width: 3;
+            fill: none;
+            stroke-dasharray: 5,5;
+            opacity: 0.8;
+        }
+
+        h3 {
+            margin: 20px 0 15px 0;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .priority-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .priority-critical {
+            background: #dc2626;
+            color: white;
+        }
+
+        .priority-high {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .priority-medium {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .priority-low {
+            background: #10b981;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div id="main-container">
+        <div id="visualization-area">
+            <div class="header">
+                <h2>Security Prioritization: From "Everything is Critical" to Risk-Based Decisions</h2>
+                <div class="view-mode" id="current-view">Traditional View: All Vulnerabilities Look Equal</div>
+            </div>
+            <svg id="visualization"></svg>
+        </div>
+
+        <div id="controls-panel">
+            <h3>🛡️ Select View</h3>
+            <div class="stage-buttons">
+                <button class="stage-button active" onclick="showStage(0)">
+                    <span>❓</span>
+                    Traditional
+                </button>
+                <button class="stage-button" onclick="showStage(1)">
+                    <span>🎯</span>
+                    Risk-Based
+                </button>
+                <button class="stage-button" onclick="showStage(2)">
+                    <span>⏱️</span>
+                    Fix Time
+                </button>
+                <button class="stage-button" onclick="showStage(3)">
+                    <span>⚡</span>
+                    Impact Time
+                </button>
+                <button class="stage-button" onclick="showStage(4)">
+                    <span>💰</span>
+                    Business Impact
+                </button>
+                <button class="stage-button" onclick="showStage(5)">
+                    <span>👁️</span>
+                    Attacker View
+                </button>
+            </div>
+
+            <div class="vuln-info" id="vuln-info">
+                <h4>CVE-2023-CRITICAL</h4>
+                <p><strong>Severity:</strong> All rated CRITICAL (CVSS 9.8)</p>
+                <p><strong>Problem:</strong> Which one to fix first?</p>
+                <p><strong>Traditional approach:</strong> Panic and fix randomly!</p>
+            </div>
+
+            <h3>🔴 Vulnerable Components</h3>
+            <div class="vuln-list" id="vuln-list">
+                <div class="vuln-item">
+                    <div class="vuln-dot"></div>
+                    <span>Payment Gateway - SQL Injection</span>
+                </div>
+                <div class="vuln-item">
+                    <div class="vuln-dot"></div>
+                    <span>Auth Service - Authentication Bypass</span>
+                </div>
+                <div class="vuln-item">
+                    <div class="vuln-dot"></div>
+                    <span>Notification Service - SSRF</span>
+                </div>
+                <div class="vuln-item">
+                    <div class="vuln-dot"></div>
+                    <span>Customer Portal - XSS</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Layer colors
+        const layerColors = {
+            customer: '#6366f1',
+            business: '#10b981',
+            application: '#8b5cf6',
+            component: '#f59e0b'
+        };
+
+        // Security evolution characteristics for different views
+        const evolutionViews = {
+            'risk-based': {
+                genesis: { main: 'Critical Risk', sub: 'Weeks to fix' },
+                custom: { main: 'High Risk', sub: 'Days to fix' },
+                product: { main: 'Medium Risk', sub: 'Hours to fix' },
+                commodity: { main: 'Low Risk', sub: 'Minutes to fix' }
+            },
+            'response-time': {
+                genesis: { main: 'Never', sub: 'No code/backups' },
+                custom: { main: 'Days', sub: '1 Week backup' },
+                product: { main: 'Hours', sub: '1 Day backup' },
+                commodity: { main: 'Minutes', sub: 'Realtime backup' }
+            },
+            'impact-time': {
+                genesis: { main: 'Immediate', sub: 'Instant impact' },
+                custom: { main: 'Minutes', sub: 'Quick cascade' },
+                product: { main: 'Hours', sub: 'Delayed effect' },
+                commodity: { main: 'Days', sub: 'Slow impact' }
+            },
+            'business-impact': {
+                genesis: { main: 'Revenue Critical', sub: 'Infinity downtime' },
+                custom: { main: 'Core Business', sub: 'Week recovery' },
+                product: { main: 'Important', sub: 'Day recovery' },
+                commodity: { main: 'Nice to Have', sub: 'Hot swap' }
+            },
+            'attacker-exposure': {
+                genesis: { main: 'Internet Facing', sub: 'Opportunistic' },
+                custom: { main: 'External API', sub: 'Commercial' },
+                product: { main: 'Partner Network', sub: 'Ideological' },
+                commodity: { main: 'Internal Only', sub: 'Nation State' }
+            }
+        };
+
+        // Base nodes - only show vulnerable ones and their connections
+        const allNodes = [
+            { id: 'customer', name: 'End Customer', layer: 'customer', x: 0.5, y: 0.92 },
+            { id: 'payment', name: 'Payment Processing', layer: 'business', x: 0.3, y: 0.85 },
+            { id: 'auth', name: 'User Authentication', layer: 'business', x: 0.5, y: 0.88 },
+            { id: 'orders', name: 'Order Fulfillment', layer: 'business', x: 0.7, y: 0.83 },
+            { id: 'data', name: 'Customer Data', layer: 'business', x: 0.9, y: 0.86 },
+            { id: 'payment-api', name: 'PaymentService API', layer: 'application', x: 0.2, y: 0.65 },
+            { id: 'auth-service', name: 'AuthService', layer: 'application', x: 0.4, y: 0.7, vulnerable: true },
+            { id: 'order-mgmt', name: 'OrderManagement', layer: 'application', x: 0.6, y: 0.6 },
+            { id: 'portal', name: 'CustomerPortal', layer: 'application', x: 0.8, y: 0.68, vulnerable: true },
+            { id: 'notify', name: 'NotificationService', layer: 'application', x: 0.5, y: 0.55, vulnerable: true },
+            { id: 'gateway', name: 'Payment Gateway', layer: 'component', x: 0.15, y: 0.38, vulnerable: true }
+        ];
+
+        const allLinks = [
+            { source: 'customer', target: 'payment' },
+            { source: 'customer', target: 'auth' },
+            { source: 'customer', target: 'orders' },
+            { source: 'customer', target: 'data' },
+            { source: 'payment', target: 'payment-api' },
+            { source: 'auth', target: 'auth-service' },
+            { source: 'orders', target: 'order-mgmt' },
+            { source: 'data', target: 'portal' },
+            { source: 'payment-api', target: 'gateway' },
+            { source: 'auth-service', target: 'notify' }
+        ];
+
+        // Evolution positions for vulnerable components in different views
+        const viewEvolutions = {
+            'risk-based': {
+                'gateway': 0.12,      // Genesis - Critical risk
+                'auth-service': 0.35, // Custom - High risk
+                'notify': 0.85,       // Commodity - Low risk
+                'portal': 0.6         // Product - Medium risk
+            },
+            'response-time': {
+                'gateway': 0.08,      // Weeks to respond
+                'auth-service': 0.3,  // Days to respond
+                'notify': 0.95,       // Minutes to respond
+                'portal': 0.65        // Hours to respond
+            },
+            'impact-time': {
+                'gateway': 0.05,      // Immediate impact on payments
+                'auth-service': 0.1,  // Immediate access to all systems
+                'portal': 0.4,        // Minutes to data breach
+                'notify': 0.9         // Days before anyone notices
+            },
+            'business-impact': {
+                'gateway': 0.1,       // Payment critical
+                'auth-service': 0.2,  // Auth critical
+                'notify': 0.8,        // Nice to have
+                'portal': 0.5         // Important but not critical
+            },
+            'attacker-exposure': {
+                'portal': 0.05,       // Internet-facing, opportunistic
+                'auth-service': 0.3,  // External API, commercial interest
+                'gateway': 0.6,       // Partner API, ideological target
+                'notify': 0.9         // Internal only, nation state only
+            }
+        };
+
+        // View configurations
+        const viewConfigs = {
+            0: {
+                name: 'Traditional View: All Vulnerabilities Look Equal',
+                type: 'hierarchy'
+            },
+            1: {
+                name: 'Risk-Based Priority: Evolution Stage = Risk Level',
+                type: 'wardley',
+                evolution: 'risk-based',
+                info: {
+                    title: 'Risk-Based Prioritization',
+                    desc: 'Components in Genesis stage are highest risk',
+                    priority: 'Fix Gateway first (Critical), then Auth (High)'
+                }
+            },
+            2: {
+                name: 'Fix Time View: How Fast Can We Patch?',
+                type: 'wardley',
+                evolution: 'response-time',
+                info: {
+                    title: 'Fix Time Priority',
+                    desc: 'Genesis components may be impossible to fix',
+                    priority: 'Gateway might never be fixed, quick-fix Notify (minutes)'
+                }
+            },
+            3: {
+                name: 'Impact Time: Speed to Business Impact',
+                type: 'wardley',
+                evolution: 'impact-time',
+                info: {
+                    title: 'Time to Business Impact',
+                    desc: 'How quickly compromise leads to business damage',
+                    priority: 'Gateway & Auth have immediate impact, fix first!'
+                }
+            },
+            4: {
+                name: 'Business Impact: Revenue and Customer Trust',
+                type: 'wardley',
+                evolution: 'business-impact',
+                info: {
+                    title: 'Business Impact Priority',
+                    desc: 'Payment and Auth are business critical',
+                    priority: 'Gateway and Auth must be fixed immediately'
+                }
+            },
+            5: {
+                name: 'Attacker Exposure: Who Can Reach It?',
+                type: 'wardley',
+                evolution: 'attacker-exposure',
+                info: {
+                    title: 'Exposure to Attackers',
+                    desc: 'Internet-facing components attract opportunistic attacks',
+                    priority: 'Portal is publicly exposed, Notify is internal only'
+                }
+            }
+        };
+
+        // Global variables
+        let svg, width, height;
+        let currentView = 0;
+
+        // Initialize
+        function init() {
+            const container = document.getElementById('visualization-area');
+            width = container.offsetWidth;
+            height = container.offsetHeight - 100;
+
+            svg = d3.select('#visualization')
+                .attr('width', width)
+                .attr('height', height);
+
+            showStage(0);
+        }
+
+        // Show specific view
+        function showStage(view) {
+            currentView = view;
+            
+            // Update buttons
+            document.querySelectorAll('.stage-button').forEach((btn, i) => {
+                btn.classList.toggle('active', i === view);
+            });
+
+            // Clear SVG
+            svg.selectAll('*').remove();
+
+            const config = viewConfigs[view];
+            updateHeader(config.name);
+
+            if (config.type === 'hierarchy') {
+                drawHierarchy();
+                updateVulnInfo('traditional');
+            } else {
+                drawSecurityWardley(config.evolution);
+                updateVulnInfo(config.evolution, config.info);
+            }
+        }
+
+        // Draw traditional hierarchy view
+        function drawHierarchy() {
+            const g = svg.append('g');
+            
+            // Position nodes in hierarchy
+            allNodes.forEach(node => {
+                const layers = { customer: 0, business: 1, application: 2, component: 3 };
+                const layerY = 100 + layers[node.layer] * 150;
+                const layerNodes = allNodes.filter(n => n.layer === node.layer);
+                const index = layerNodes.indexOf(node);
+                const count = layerNodes.length;
+                
+                if (node.layer === 'customer') {
+                    node.displayX = width / 2;
+                    node.displayY = layerY;
+                } else {
+                    const spreadWidth = width * 0.8;
+                    const startX = (width - spreadWidth) / 2;
+                    node.displayX = startX + (spreadWidth / Math.max(1, count - 1)) * index;
+                    node.displayY = layerY;
+                }
+            });
+
+            // Draw links
+            g.append('g')
+                .selectAll('line')
+                .data(allLinks)
+                .join('line')
+                .attr('class', 'link')
+                .attr('x1', d => allNodes.find(n => n.id === d.source).displayX)
+                .attr('y1', d => allNodes.find(n => n.id === d.source).displayY)
+                .attr('x2', d => allNodes.find(n => n.id === d.target).displayX)
+                .attr('y2', d => allNodes.find(n => n.id === d.target).displayY);
+
+            // Draw nodes
+            const nodeGroups = g.append('g')
+                .selectAll('g')
+                .data(allNodes)
+                .join('g')
+                .attr('transform', d => `translate(${d.displayX},${d.displayY})`);
+
+            nodeGroups.append('circle')
+                .attr('r', d => d.layer === 'customer' ? 30 : 20)
+                .attr('fill', d => d.vulnerable ? '#dc2626' : layerColors[d.layer])
+                .attr('stroke', '#fff')
+                .attr('stroke-width', 2)
+                .attr('class', 'node');
+
+            nodeGroups.append('text')
+                .attr('class', 'node-label')
+                .attr('dy', 35)
+                .text(d => d.name);
+
+            // Add vulnerability markers
+            nodeGroups.filter(d => d.vulnerable)
+                .append('text')
+                .attr('dy', -30)
+                .attr('text-anchor', 'middle')
+                .attr('font-size', '20px')
+                .text('⚠️');
+        }
+
+        // Draw security-focused Wardley map
+        function drawSecurityWardley(evolutionKey) {
+            const g = svg.append('g');
+            const evolutions = viewEvolutions[evolutionKey];
+            const labels = evolutionViews[evolutionKey];
+            
+            // Assign evolution values
+            allNodes.forEach(node => {
+                if (node.vulnerable) {
+                    node.evolution = evolutions[node.id];
+                } else {
+                    // Non-vulnerable components get default positions
+                    node.evolution = 0.7; // Most are products/commodities
+                }
+            });
+
+            // Draw evolution stages with view-specific labels
+            const stages = [
+                { ...labels.genesis, start: 0, end: 0.25 },
+                { ...labels.custom, start: 0.25, end: 0.5 },
+                { ...labels.product, start: 0.5, end: 0.75 },
+                { ...labels.commodity, start: 0.75, end: 1 }
+            ];
+
+            stages.forEach(stage => {
+                g.append('rect')
+                    .attr('class', 'evolution-stage')
+                    .attr('x', stage.start * width)
+                    .attr('y', 0)
+                    .attr('width', (stage.end - stage.start) * width)
+                    .attr('height', height);
+
+                // Main text
+                g.append('text')
+                    .attr('class', 'evolution-label')
+                    .attr('x', (stage.start + stage.end) / 2 * width)
+                    .attr('y', height - 25)
+                    .text(stage.main);
+
+                // Sub text
+                g.append('text')
+                    .attr('class', 'evolution-details')
+                    .attr('x', (stage.start + stage.end) / 2 * width)
+                    .attr('y', height - 10)
+                    .text(stage.sub);
+            });
+
+            // Draw value chain axis
+            g.append('line')
+                .attr('x1', 0)
+                .attr('y1', 0)
+                .attr('x2', 0)
+                .attr('y2', height)
+                .attr('stroke', '#e2e8f0')
+                .attr('stroke-width', 2);
+
+            g.append('text')
+                .attr('class', 'axis-label')
+                .attr('transform', 'rotate(-90)')
+                .attr('y', -5)
+                .attr('x', -height / 2)
+                .attr('text-anchor', 'middle')
+                .text('Value Chain (Visible → Invisible)');
+
+            // Position nodes
+            allNodes.forEach(node => {
+                node.wardleyX = node.evolution * width;
+                node.wardleyY = (1 - node.y) * height;
+            });
+
+            // Draw risk indicators for vulnerable components
+            const vulnNodes = allNodes.filter(n => n.vulnerable);
+            vulnNodes.forEach(node => {
+                g.append('circle')
+                    .attr('class', 'risk-indicator')
+                    .attr('cx', node.wardleyX)
+                    .attr('cy', node.wardleyY)
+                    .attr('r', 35);
+            });
+
+            // Draw links
+            g.append('g')
+                .selectAll('line')
+                .data(allLinks)
+                .join('line')
+                .attr('class', 'link')
+                .attr('x1', d => allNodes.find(n => n.id === d.source).wardleyX)
+                .attr('y1', d => allNodes.find(n => n.id === d.source).wardleyY)
+                .attr('x2', d => allNodes.find(n => n.id === d.target).wardleyX)
+                .attr('y2', d => allNodes.find(n => n.id === d.target).wardleyY);
+
+            // Draw nodes
+            const nodeGroups = g.append('g')
+                .selectAll('g')
+                .data(allNodes)
+                .join('g')
+                .attr('transform', d => `translate(${d.wardleyX},${d.wardleyY})`);
+
+            nodeGroups.append('circle')
+                .attr('r', d => d.layer === 'customer' ? 30 : 20)
+                .attr('fill', d => {
+                    if (d.vulnerable) {
+                        return '#dc2626'; // All vulnerable nodes are red
+                    }
+                    return layerColors[d.layer];
+                })
+                .attr('stroke', '#fff')
+                .attr('stroke-width', 2)
+                .attr('class', 'node');
+
+            nodeGroups.append('text')
+                .attr('class', 'node-label')
+                .attr('dy', -25)
+                .text(d => d.name);
+
+            // Add vulnerability markers
+            nodeGroups.filter(d => d.vulnerable)
+                .append('text')
+                .attr('dy', 5)
+                .attr('text-anchor', 'middle')
+                .attr('font-size', '16px')
+                .text('🔓');
+        }
+
+        // Update vulnerability info panel
+        function updateVulnInfo(type, info) {
+            const vulnInfo = document.getElementById('vuln-info');
+            
+            if (type === 'traditional') {
+                vulnInfo.innerHTML = `
+                    <h4>CVE-2023-CRITICAL</h4>
+                    <p><strong>Severity:</strong> All rated CRITICAL (CVSS 9.8)</p>
+                    <p><strong>Problem:</strong> Which one to fix first?</p>
+                    <p><strong>Traditional approach:</strong> Panic and fix randomly!</p>
+                `;
+            } else {
+                const vulnNodes = allNodes.filter(n => n.vulnerable);
+                const evolutions = viewEvolutions[type];
+                
+                // Sort by evolution (lower = higher priority)
+                const sorted = vulnNodes.sort((a, b) => evolutions[a.id] - evolutions[b.id]);
+                
+                vulnInfo.innerHTML = `
+                    <h4>${info.title}</h4>
+                    <p><strong>Insight:</strong> ${info.desc}</p>
+                    <p><strong>Action:</strong> ${info.priority}</p>
+                `;
+                
+                // Update vulnerability list with priorities
+                const vulnList = document.getElementById('vuln-list');
+                vulnList.innerHTML = sorted.map((node, i) => {
+                    const evolution = evolutions[node.id];
+                    let priority, badge;
+                    
+                    if (evolution < 0.25) {
+                        priority = 'Fix First';
+                        badge = 'priority-critical';
+                    } else if (evolution < 0.5) {
+                        priority = 'Fix Second';
+                        badge = 'priority-high';
+                    } else if (evolution < 0.75) {
+                        priority = 'Fix Third';
+                        badge = 'priority-medium';
+                    } else {
+                        priority = 'Fix Last';
+                        badge = 'priority-low';
+                    }
+                    
+                    const vulnName = {
+                        'gateway': 'Payment Gateway - SQL Injection',
+                        'auth-service': 'Auth Service - Authentication Bypass',
+                        'notify': 'Notification Service - SSRF',
+                        'portal': 'Customer Portal - XSS'
+                    }[node.id];
+                    
+                    return `
+                        <div class="vuln-item">
+                            <div class="vuln-dot"></div>
+                            <span>${vulnName}</span>
+                            <span class="priority-badge ${badge}">${priority}</span>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        // Update header
+        function updateHeader(text) {
+            document.getElementById('current-view').textContent = text;
+        }
+
+        // Initialize on load
+        window.addEventListener('load', init);
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            const container = document.getElementById('visualization-area');
+            width = container.offsetWidth;
+            height = container.offsetHeight - 100;
+            
+            svg.attr('width', width).attr('height', height);
+            
+            showStage(currentView);
+        });
+    </script>
+</body>
+</html>
